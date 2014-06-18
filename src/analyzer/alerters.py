@@ -65,9 +65,13 @@ def alert_hipchat(alert, metric):
 
 def trigger_alert(alert, metric):
 
-    if '@' in alert[1]:
-        strategy = 'alert_smtp'
+    target = None
+    if callable(alert[1]):
+        target = alert[1]
     else:
-        strategy = 'alert_' + alert[1]
-
-    getattr(alerters, strategy)(alert, metric)
+        if '@' in alert[1]:
+            strategy = 'alert_smtp'
+        else:
+            strategy = 'alert_' + alert[1]
+        target = getattr(alerters, strategy)
+    target(alert, metric)
