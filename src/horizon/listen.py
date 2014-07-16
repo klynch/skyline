@@ -110,6 +110,8 @@ class Listen(Process):
         data = ''
         while n > 0:
             buf = sock.recv(n)
+            if len(buf) == 0:
+                raise RuntimeError('Client disconnected')
             n -= len(buf)
             data += buf
         return data
