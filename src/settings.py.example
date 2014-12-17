@@ -169,6 +169,9 @@ WORKER_PROCESSES = 2
 # The IP address for Horizon to listen on.  Defaults to gethostname()
 # HORIZON_IP = '0.0.0.0'
 
+# This is the port that listens for Graphite pickles over TCP
+LINE_PORT = 2023
+
 # This is the port that listens for Graphite pickles over TCP, sent by Graphite's
 # carbon-relay agent.
 PICKLE_PORT = 2024
