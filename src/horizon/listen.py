@@ -180,7 +180,7 @@ class Listen(Process):
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 s.bind((self.ip, self.port))
                 s.listen(5)
-                logger.info('listening over tcp for pickles on %s' % self.port)
+                logger.info('listening over tcp for line on %s' % self.port)
 
                 (conn, address) = s.accept()
                 logger.info('connection from %s:%s' % (address[0], self.port))
