@@ -203,7 +203,7 @@ class Listen(Process):
                         m = metric.split(" ")
                         if len(m) != 3:
                             continue
-                        chunk.append((m[0], (float([2]), float(m[1]))))
+                        chunk.append((m[0], (float(m[2]), float(m[1]))))
                         # Queue the chunk and empty the variable
                         if len(chunk) > settings.CHUNK_SIZE:
                             try:
