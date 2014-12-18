@@ -197,9 +197,8 @@ class Listen(Process):
                         logger.info('received line too long, may be protocol error, drop data')
                         break
                     buf = data.split("\n")
-                    if data[-1] != '\n':
-                        data = buf[-1]
-                        buf = buf[:-1]
+                    data = buf[-1]
+                    buf = buf[:-1]
                     for metric in buf:
                         m = metric.split(" ")
                         if len(m) != 3:
