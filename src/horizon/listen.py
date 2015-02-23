@@ -173,6 +173,52 @@ class Listen(Process):
                 logger.info('can\'t connect to socket: ' + str(e))
                 break
 
+    def listen_line(self):
+        while 1:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind((self.ip, self.port))
+                s.listen(5)
+                logger.info('listening over tcp for line on %s' % self.port)
+
+                (conn, address) = s.accept()
+                logger.info('connection from %s:%s' % (address[0], self.port))
+
+                chunk = []
+                data = ""
+                while 1:
+                    self.check_if_parent_is_alive()
+                    data += conn.recv(4096)
+                    if not data:
+                        logger.info('incoming connection dropped, attempting to reconnect')
+                        break
+                    if len(data) > 8392:
+                        logger.info('received line too long, may be protocol error, drop data')
+                        break
+                    buf = data.split("\n")
+                    data = buf[-1]
+                    buf = buf[:-1]
+                    for metric in buf:
+                        m = metric.split(" ")
+                        if len(m) != 3:
+                            continue
+                        chunk.append((m[0], (float(m[2]), float(m[1]))))
+                        # Queue the chunk and empty the variable
+                        if len(chunk) > settings.CHUNK_SIZE:
+                            try:
+                                self.q.put(list(chunk), block=False)
+                                chunk[:] = []
+
+                            # Drop chunk if queue is full
+                            except Full:
+                                logger.info('queue is full, dropping datapoints')
+                                chunk[:] = []
+
+            except Exception as e:
+                logger.info('can\'t connect to socket: ' + str(e))
+                break
+
     def listen_udp(self):
         """
         Listen over udp for MessagePack strings
@@ -215,5 +261,7 @@ class Listen(Process):
             self.listen_pickle()
         elif self.type == 'udp':
             self.listen_udp()
+        elif self.type == 'line':
+            self.listen_line()
         else:
             logging.error('unknown listener format')
