@@ -6,3 +6,4 @@ simplejson==2.0.9
 unittest2
 mock
 #python-simple-hipchat
+msgpack-python==0.4.2
