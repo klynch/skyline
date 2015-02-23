@@ -70,6 +70,8 @@ def median_absolute_deviation(timeseries):
     # 6 times bigger than the median
     if test_statistic > 6:
         return True
+    else:
+        return False
 
 
 def grubbs(timeseries):
