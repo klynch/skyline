@@ -68,8 +68,8 @@ class Analyzer(Thread):
         if i == settings.ANALYZER_PROCESSES:
             assigned_max = len(unique_metrics)
         else:
-            assigned_max = i * keys_per_processor
-        assigned_min = assigned_max - keys_per_processor
+            assigned_max = min(len(unique_metrics), i * keys_per_processor)
+        assigned_min = (i - 1) * keys_per_processor
         assigned_keys = range(assigned_min, assigned_max)
 
         # Compile assigned metrics
