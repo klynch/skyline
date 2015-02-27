@@ -137,6 +137,12 @@ ALERTS = (
 
 # Each alert module requires additional information.
 SMTP_OPTS = {
+    # This specifies the mailserver to connect to. If user or password are blank,
+    # no authentication is used.
+    "host": "127.0.0.1:25",
+    "user": "skyline",
+    "password": "",
+
     # This specifies the sender of email alerts.
     "sender": "skyline-alerts@etsy.com",
     # recipients is a dictionary mapping metric names

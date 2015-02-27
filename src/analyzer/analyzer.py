@@ -207,7 +207,6 @@ class Analyzer(Thread):
                                 if not last_alert:
                                     self.redis_conn.setex(cache_key, alert[2], packb(metric[0]))
                                     trigger_alert(alert, metric)
-
                             except Exception as e:
                                 logger.error("couldn't send alert: %s" % e)
 

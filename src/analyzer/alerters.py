@@ -21,7 +21,6 @@ metric: information about the anomaly itself
 
 
 def alert_smtp(alert, metric):
-
     # For backwards compatibility
     if '@' in alert[1]:
         sender = settings.ALERT_SENDER
@@ -34,17 +33,24 @@ def alert_smtp(alert, metric):
     if type(recipients) is str:
         recipients = [recipients]
 
+    # Connect to the mail server
+    conn = SMTP(settings.SMTP_OPTS["host"])
+    user = settings.SMTP_OPTS.get("user")
+    password = settings.SMTP_OPTS.get("password")
+    if user and password:
+        conn.login(user, password)
+
     for recipient in recipients:
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = '[skyline alert] ' + metric[1]
+        msg['Subject'] = '[Skyline] ' + metric[1]
         msg['From'] = sender
         msg['To'] = recipient
         link = settings.GRAPH_URL % (metric[1])
         body = 'Anomalous value: %s <br> Next alert in: %s seconds <a href="%s"><img src="%s"/></a>' % (metric[0], alert[2], link, link)
         msg.attach(MIMEText(body, 'html'))
-        s = SMTP('127.0.0.1')
-        s.sendmail(sender, recipient, msg.as_string())
-        s.quit()
+        conn.sendmail(sender, recipient, msg.as_string())
+
+    conn.quit()
 
 
 def alert_pagerduty(alert, metric):
