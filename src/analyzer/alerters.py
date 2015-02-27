@@ -21,24 +21,15 @@ metric: information about the anomaly itself
 
 
 def alert_smtp(alert, metric):
-    # For backwards compatibility
-    if '@' in alert[1]:
-        sender = settings.ALERT_SENDER
-        recipient = alert[1]
-    else:
-        sender = settings.SMTP_OPTS['sender']
-        recipients = settings.SMTP_OPTS['recipients'][alert[0]]
-
-    # Backwards compatibility
-    if type(recipients) is str:
-        recipients = [recipients]
-
     # Connect to the mail server
     conn = SMTP(settings.SMTP_OPTS["host"])
     user = settings.SMTP_OPTS.get("user")
     password = settings.SMTP_OPTS.get("password")
     if user and password:
         conn.login(user, password)
+
+    sender = settings.SMTP_OPTS['sender']
+    recipients = settings.SMTP_OPTS['recipients'][alert[0]]
 
     for recipient in recipients:
         msg = MIMEMultipart('alternative')
