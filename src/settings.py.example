@@ -234,16 +234,16 @@ MAX_RESOLUTION = 1000
 # skyline.analyzer.anomaly_breakdown. which MUST be skipped to prevent crazy
 # feedback.
 SKIP_LIST = [
-    'skyline.analyzer.anomaly_breakdown.',
-    'example.statsd.metric',
-    'another.example.metric',
+    '^skyline\.analyzer\.anomaly_breakdown.$',
+    '^example\.statsd\.metric$',
+    '^another\.example\.metric$',
     # if you use statsd, these can result in many near-equal series
-    #'_90',
-    #'.lower',
-    #'.upper',
-    #'.median',
-    #'.count_ps',
-    #'.sum',
+    #'_90$',
+    #'\.lower$',
+    #'\.upper$',
+    #'\.median$',
+    #'\.count_ps$',
+    #'\.sum$',
 ]
 
 

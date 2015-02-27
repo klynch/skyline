@@ -6,10 +6,14 @@ from msgpack import packb
 from time import time, sleep
 
 import logging
+import re
 import socket
 import settings
 
 logger = logging.getLogger("HorizonLog")
+
+# Only compile the regexes once
+REGEX_SKIP_LIST = [re.compile(regex) for regex in settings.SKIP_LIST]
 
 try:
   SERVER_METRIC_PATH = settings.SERVER_METRICS_NAME + '.'
@@ -43,11 +47,7 @@ class Worker(Process):
         """
         Check if the metric is in SKIP_LIST.
         """
-        for to_skip in settings.SKIP_LIST:
-            if to_skip in metric_name:
-                return True
-
-        return False
+        return any(regex.match(metric_name) for regex in REGEX_SKIP_LIST)
 
     def send_graphite_metric(self, name, value):
         if settings.GRAPHITE_HOST != '':
