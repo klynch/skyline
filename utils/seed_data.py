@@ -44,7 +44,7 @@ def seed():
             sock.sendto(packet, (socket.gethostname(), settings.UDP_PORT))
 
     print "Connecting to Redis..."
-    r = redis.StrictRedis(unix_socket_path=settings.REDIS_SOCKET_PATH)
+    r = redis.StrictRedis(**settings.REDIS_OPTS)
     time.sleep(5)
 
     try:

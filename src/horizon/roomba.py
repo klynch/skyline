@@ -18,7 +18,7 @@ class Roomba(Thread):
     """
     def __init__(self, parent_pid, skip_mini):
         super(Roomba, self).__init__()
-        self.redis_conn = StrictRedis(unix_socket_path = settings.REDIS_SOCKET_PATH)
+        self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
         self.daemon = True
         self.parent_pid = parent_pid
         self.skip_mini = skip_mini
@@ -158,9 +158,9 @@ class Roomba(Thread):
             try:
                 self.redis_conn.ping()
             except:
-                logger.error('roomba can\'t connect to redis at socket path %s' % settings.REDIS_SOCKET_PATH)
+                logger.error('roomba can\'t connect to redis')
                 sleep(10)
-                self.redis_conn = StrictRedis(unix_socket_path = settings.REDIS_SOCKET_PATH)
+                self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
                 continue
 
             # Spawn processes

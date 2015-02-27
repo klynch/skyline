@@ -12,7 +12,7 @@ metric = 'horizon.test.udp'
 
 
 def check_continuity(metric, mini = False):
-    r = redis.StrictRedis(unix_socket_path=settings.REDIS_SOCKET_PATH)
+    r = redis.StrictRedis(**settings.REDIS_OPTS)
     if mini:
         raw_series = r.get(settings.MINI_NAMESPACE + metric)
     else:

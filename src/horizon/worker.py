@@ -27,7 +27,7 @@ class Worker(Process):
     """
     def __init__(self, queue, parent_pid, skip_mini, canary=False):
         super(Worker, self).__init__()
-        self.redis_conn = StrictRedis(unix_socket_path = settings.REDIS_SOCKET_PATH)
+        self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
         self.q = queue
         self.parent_pid = parent_pid
         self.daemon = True
@@ -78,9 +78,9 @@ class Worker(Process):
             try:
                 self.redis_conn.ping()
             except:
-                logger.error('worker can\'t connect to redis at socket path %s' % settings.REDIS_SOCKET_PATH)
+                logger.error('worker can\'t connect to redis')
                 sleep(10)
-                self.redis_conn = StrictRedis(unix_socket_path = settings.REDIS_SOCKET_PATH)
+                self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
                 pipe = self.redis_conn.pipeline()
                 continue
 
