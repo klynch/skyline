@@ -229,7 +229,13 @@ class Analyzer(Thread):
 
             # Log to Graphite
             self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'run_time', '%.2f' % (time() - now))
-            self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'total_analyzed', '%.2f' % (len(unique_metrics) - sum(exceptions.values())))
+            self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'total_analyzed', len(unique_metrics) - sum(exceptions.values()))
+            self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'total_anomalies', len(self.anomalous_metrics))
+            self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'total_metrics', len(unique_metrics))
+            for key, value in exceptions.items():
+                self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'exceptions.' + key, value)
+            for key, value in anomaly_breakdown.items():
+                self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'anomaly_breakdown.' + key, value)
 
             # Check canary metric
             raw_series = self.redis_conn.get(settings.FULL_NAMESPACE + settings.CANARY_METRIC)
