@@ -14,11 +14,14 @@ LOG_PATH = '/var/log/skyline'
 PID_PATH = '/var/run/skyline'
 
 # Metrics will be prefixed with this value in Redis.
-FULL_NAMESPACE = 'metrics.'
+FULL_NAMESPACE = 'skyline:metric'
+
+# Key where the set of unique metrics is stored
+METRIC_SET_KEY = 'skyline:metricset'
 
 # The Horizon agent will make T'd writes to both the full namespace and the
 # mini namespace. Oculus gets its data from everything in the mini namespace.
-MINI_NAMESPACE = 'mini.'
+MINI_NAMESPACE = 'skyline:mini'
 
 # This is the rolling duration that will be stored in Redis. Be sure to pick a
 # value that suits your memory capacity, your CPU capacity, and your overall
@@ -188,28 +191,6 @@ SYSLOG_OPTS = {
 """
 Horizon settings
 """
-# This is the number of worker processes that will consume from the Horizon
-# queue.
-WORKER_PROCESSES = 2
-
-# The IP address for Horizon to listen on.  Defaults to gethostname()
-# HORIZON_IP = '0.0.0.0'
-
-# This is the port that listens for Graphite pickles over TCP
-LINE_PORT = 2023
-
-# This is the port that listens for Graphite pickles over TCP, sent by Graphite's
-# carbon-relay agent.
-PICKLE_PORT = 2024
-
-# This is the port that listens for Messagepack-encoded UDP packets.
-UDP_PORT = 2025
-
-# This is how big a 'chunk' of metrics will be before they are added onto
-# the shared queue for processing into Redis. If you are noticing that Horizon
-# is having trouble consuming metrics, try setting this value a higher.
-CHUNK_SIZE = 10
-
 # This is the maximum allowable length of the processing queue before new
 # chunks are prevented from being added. If you consistently fill up the
 # processing queue, a higher MAX_QUEUE_SIZE will not save you. It most likely

@@ -1,93 +1,52 @@
-import logging
-import time
+import argparse
 import sys
-from os import getpid
 from os.path import dirname, abspath, isdir
-from multiprocessing import Queue
-from daemon import runner
+
+import time
+from cache import MetricCache
+
+from twisted.application import internet, service
+from twisted.internet.protocol import ServerFactory, Protocol
+
+from twisted.python import log
+from twisted.internet import reactor
+from protocols import *
+from publishers import RedisPublisher
 
 # add the shared settings file to namespace
 sys.path.insert(0, dirname(dirname(abspath(__file__))))
 import settings
 
-from listen import Listen
-from roomba import Roomba
-from worker import Worker
+def publishForever(publisher):
+  while reactor.running:
+    try:
+      publisher.publishCachedData()
+    except:
+      log.err()
 
-# TODO: http://stackoverflow.com/questions/6728236/exception-thrown-in-multiprocessing-pool-not-detected
+    time.sleep(1)  # The writer thread only sleeps when the cache is empty or an error occurs
 
-
-class Horizon():
-    def __init__(self):
-        self.stdin_path = '/dev/null'
-        self.stdout_path = settings.LOG_PATH + '/horizon.log'
-        self.stderr_path = settings.LOG_PATH + '/horizon.log'
-        self.pidfile_path = settings.PID_PATH + '/horizon.pid'
-        self.pidfile_timeout = 5
-
-    def run(self):
-        logger.info('starting horizon agent')
-        listen_queue = Queue(maxsize=settings.MAX_QUEUE_SIZE)
-        pid = getpid()
-
-        #If we're not using oculus, don't bother writing to mini
-        try:
-            skip_mini = True if settings.OCULUS_HOST == '' else False
-        except Exception:
-            skip_mini = True
-
-        # Start the workers
-        for i in range(settings.WORKER_PROCESSES):
-            if i == 0:
-                Worker(listen_queue, pid, skip_mini, canary=True).start()
-            else:
-                Worker(listen_queue, pid, skip_mini).start()
-
-        # Start the listeners
-        if hasattr(settings, 'PICKLE_PORT'):
-            Listen(settings.PICKLE_PORT, listen_queue, pid, type="pickle").start()
-        if hasattr(settings, 'UDP_PORT'):
-            Listen(settings.UDP_PORT, listen_queue, pid, type="udp").start()
-        if hasattr(settings, 'LINE_PORT'):
-            Listen(settings.LINE_PORT, listen_queue, pid, type="line").start()
-
-        # Start the roomba
-        Roomba(pid, skip_mini).start()
-
-        # Warn the Mac users
-        try:
-            listen_queue.qsize()
-        except NotImplementedError:
-            logger.info('WARNING: Queue().qsize() not implemented on Unix platforms like Mac OS X. Queue size logging will be unavailable.')
-
-        # Keep yourself occupied, sucka
-        while 1:
-            time.sleep(100)
 
 if __name__ == "__main__":
     """
     Start the Horizon agent.
     """
-    if not isdir(settings.PID_PATH):
-        print 'pid directory does not exist at %s' % settings.PID_PATH
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='Process graphite metrics.')
+    parser.add_argument("-n", "--name", help="Horizon process name")
+    parser.add_argument("-i", "--interface", default="", help="Horizon process name")
+    parser.add_argument("-l", "--line-port", type=int, default=0, help="Listen for graphite line data")
+    parser.add_argument("-p", "--pickle-port", type=int, default=0, help="Listen for graphite pickle data")
+    args = parser.parse_args()
 
-    if not isdir(settings.LOG_PATH):
-        print 'log directory does not exist at %s' % settings.LOG_PATH
-        sys.exit(1)
+    if not any((args.line_port, args.pickle_port)):
+        parser.error("specify at least one port to listen on")
 
-    horizon = Horizon()
+    log.startLogging(sys.stdout)
 
-    logger = logging.getLogger("HorizonLog")
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("%(asctime)s :: %(process)s :: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-    handler = logging.FileHandler(settings.LOG_PATH + '/horizon.log')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    if args.line_port:
+        reactor.listenTCP(args.line_port, MetricLineFactory(), interface=args.interface)
+    if args.pickle_port:
+        reactor.listenTCP(args.pickle_port, MetricPickleFactory())
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'run':
-        horizon.run()
-    else:
-        daemon_runner = runner.DaemonRunner(horizon)
-        daemon_runner.daemon_context.files_preserve = [handler.stream]
-        daemon_runner.do_action()
+    reactor.callInThread(publishForever, RedisPublisher())
+    reactor.run()
