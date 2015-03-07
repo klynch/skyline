@@ -36,16 +36,6 @@ class MetricLineReceiver(MetricReceiver, LineOnlyReceiver):
       log.msg('invalid line (%s) received from client %s, ignoring' % (line.strip(), self.peerName))
 
 
-class MetricDatagramReceiver(MetricReceiver, DatagramProtocol):
-  def datagramReceived(self, data, (host, port)):
-    for line in data.splitlines():
-      try:
-        metric, value, timestamp = line.strip().split()
-        self.metricReceived(metric, (float(timestamp), float(value)))
-      except:
-        log.msg('invalid line (%s) received from %s, ignoring' % (line, host))
-
-
 class MetricPickleReceiver(MetricReceiver, Int32StringReceiver):
   MAX_LENGTH = 2 ** 20
 
@@ -68,6 +58,16 @@ class MetricPickleReceiver(MetricReceiver, Int32StringReceiver):
         continue
 
       self.metricReceived(metric, datapoint)
+
+
+class MetricDatagramReceiver(MetricReceiver, DatagramProtocol):
+  def datagramReceived(self, data, (host, port)):
+    for line in data.splitlines():
+      try:
+        metric, value, timestamp = line.strip().split()
+        self.metricReceived(metric, (float(timestamp), float(value)))
+      except:
+        log.msg('invalid line (%s) received from %s, ignoring' % (line, host))
 
 
 class MetricLineFactory(ServerFactory):
