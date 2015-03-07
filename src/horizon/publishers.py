@@ -44,7 +44,8 @@ class RedisPublisher:
         self.pipe.hset(info_key, 'updated_at', time.time())
 
         #Add the metric to the unique metric set
-        self.pipe.sadd(settings.METRIC_SET_KEY, metric)
+        self.pipe.sadd(settings.UPDATED_METRIC_SET_KEY, metric)
+        self.pipe.sadd(settings.ALL_METRIC_SET_KEY, metric)
         self.pipe.execute()
 
 

@@ -16,8 +16,11 @@ PID_PATH = '/var/run/skyline'
 # Metrics will be prefixed with this value in Redis.
 FULL_NAMESPACE = 'skyline:metric'
 
-# Key where the set of unique metrics is stored
-METRIC_SET_KEY = 'skyline:metricset'
+# Key where the set of recently updated metrics is stored for future processing
+UPDATED_METRIC_SET_KEY = 'skyline:metricset:updated'
+
+# Key where the set of all metrics is stored. This is used for housekeeping
+ALL_METRIC_SET_KEY = 'skyline:metricset:all'
 
 # The Horizon agent will make T'd writes to both the full namespace and the
 # mini namespace. Oculus gets its data from everything in the mini namespace.
