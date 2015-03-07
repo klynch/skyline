@@ -4,7 +4,8 @@ Shared settings
 
 # The options for Redis
 REDIS_OPTS = {
-  'unix_socket_path': '/tmp/redis.sock'
+  'host': 'localhost',
+  'port': 6379,
 }
 
 # The Skyline logs directory. Do not include a trailing slash.
