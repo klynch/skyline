@@ -1,12 +1,12 @@
 import os
 import time
-from itertools import ifilter
 from redis import StrictRedis
 from cache import MetricCache
 from twisted.python import log
 from msgpack import packb
 import settings
 from twisted.internet import reactor
+from utils import metric_info_key, metric_data_key
 
 #1. check if in skip list (record blacklist + whitelist hits)
 #2. check if stale data (record number of stale metrics)
@@ -34,9 +34,16 @@ class RedisPublisher:
 
 
     def publish(self, metric, datapoints):
-        key = ':'.join((settings.FULL_NAMESPACE, metric))
-        data = ''.join(map(packb, datapoints))
-        self.pipe.append(key, data)
+        #Append the data
+        data_key = metric_data_key(metric)
+        self.pipe.append(data_key, ''.join(map(packb, datapoints)))
+
+        #Update some metadata
+        info_key = metric_info_key(metric)
+        self.pipe.hincrby(info_key, 'length', len(list(datapoints)))
+        self.pipe.hset(info_key, 'updated_at', time.time())
+
+        #Add the metric to the unique metric set
         self.pipe.sadd(settings.METRIC_SET_KEY, metric)
         self.pipe.execute()
 
@@ -55,7 +62,7 @@ class RedisPublisher:
                 dataWritten = True
 
                 try:
-                    self.publish(metric, ifilter(lambda x: x[0] >= max_age, datapoints))
+                    self.publish(metric, filter(lambda x: x[0] >= max_age, datapoints))
                 except Exception as e:
                     log.err("RedisPublisher can't publish {0} to redis: {1}".format(metric, e))
                     #TODO add metrics back to MetricCache
