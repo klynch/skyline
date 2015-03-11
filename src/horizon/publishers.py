@@ -12,6 +12,17 @@ from utils import metric_info_key, metric_data_key
 #2. check if stale data (record number of stale metrics)
 #3. record to redis
 
+
+def publish_forever(publisher):
+  while reactor.running:
+    try:
+      publisher.publishCachedData()
+    except:
+      log.err()
+
+    time.sleep(1)  # The writer thread only sleeps when the cache is empty or an error occurs
+
+
 class RedisPublisher:
     def __init__(self):
         #We should not need to reconnect
