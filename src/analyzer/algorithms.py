@@ -2,9 +2,7 @@ import pandas
 import numpy as np
 import scipy
 import statsmodels.api as sm
-import traceback
-import logging
-from time import time
+import time
 from msgpack import unpackb, packb
 from redis import StrictRedis
 
@@ -22,7 +20,6 @@ from settings import (
 
 from algorithm_exceptions import *
 
-logger = logging.getLogger("AnalyzerLog")
 redis_conn = StrictRedis(**REDIS_OPTS)
 
 """
@@ -53,7 +50,6 @@ def median_absolute_deviation(timeseries):
     A timeseries is anomalous if the deviation of its latest datapoint with
     respect to the median is X times larger than the median of deviations.
     """
-
     series = pandas.Series([x[1] for x in timeseries])
     median = series.median()
     demedianed = np.abs(series - median)
@@ -78,7 +74,6 @@ def grubbs(timeseries):
     """
     A timeseries is anomalous if the Z score is greater than the Grubb's score.
     """
-
     series = scipy.array([x[1] for x in timeseries])
     stdDev = scipy.std(series)
     mean = np.mean(series)
@@ -98,7 +93,7 @@ def first_hour_average(timeseries):
     A timeseries is anomalous if the average of the last three datapoints
     are outside of three standard deviations of this value.
     """
-    last_hour_threshold = time() - (FULL_DURATION - 3600)
+    last_hour_threshold = time.time() - (FULL_DURATION - 3600)
     series = pandas.Series([x[1] for x in timeseries if x[0] < last_hour_threshold])
     mean = (series).mean()
     stdDev = (series).std()
@@ -156,7 +151,6 @@ def least_squares(timeseries):
     A timeseries is anomalous if the average of the last three datapoints
     on a projected least squares model is greater than three sigma.
     """
-
     x = np.array([t[0] for t in timeseries])
     y = np.array([t[1] for t in timeseries])
     A = np.vstack([x, np.ones(len(x))]).T
@@ -187,7 +181,6 @@ def histogram_bins(timeseries):
     Returns: the size of the bin which contains the tail_avg. Smaller bin size
     means more anomalous.
     """
-
     series = scipy.array([x[1] for x in timeseries])
     t = tail_avg(timeseries)
     h = np.histogram(series, bins=15)
@@ -213,8 +206,8 @@ def ks_test(timeseries):
     Dickey-Fuller test applied to check for stationarity.
     """
 
-    hour_ago = time() - 3600
-    ten_minutes_ago = time() - 600
+    hour_ago = time.time() - 3600
+    ten_minutes_ago = time.time() - 600
     reference = scipy.array([x[1] for x in timeseries if x[0] >= hour_ago and x[0] < ten_minutes_ago])
     probe = scipy.array([x[1] for x in timeseries if x[0] >= ten_minutes_ago])
 
@@ -237,12 +230,12 @@ def is_anomalously_anomalous(metric_name, ensemble, datapoint):
     metric has a past history of triggering. TODO: weight intervals based on datapoint
     """
     # We want the datapoint to avoid triggering twice on the same data
-    new_trigger = [time(), datapoint]
+    new_trigger = [time.time(), datapoint]
 
     # Get the old history
     raw_trigger_history = redis_conn.get('trigger_history.' + metric_name)
     if not raw_trigger_history:
-        redis_conn.set('trigger_history.' + metric_name, packb([(time(), datapoint)]))
+        redis_conn.set('trigger_history.' + metric_name, packb([(time.time(), datapoint)]))
         return True
 
     trigger_history = unpackb(raw_trigger_history)
@@ -269,35 +262,3 @@ def is_anomalously_anomalous(metric_name, ensemble, datapoint):
     stdDev = series.std()
 
     return abs(intervals[-1] - mean) > 3 * stdDev
-
-
-def run_selected_algorithm(timeseries, metric_name):
-    """
-    Filter timeseries and run selected algorithm.
-    """
-    # Get rid of short series
-    if len(timeseries) < MIN_TOLERABLE_LENGTH:
-        raise TooShort()
-
-    # Get rid of stale series
-    if time() - timeseries[-1][0] > STALE_PERIOD:
-        raise Stale()
-
-    # Get rid of boring series
-    if len(set(item[1] for item in timeseries[-MAX_TOLERABLE_BOREDOM:])) == BOREDOM_SET_SIZE:
-        raise Boring()
-
-    try:
-        ensemble = [globals()[algorithm](timeseries) for algorithm in ALGORITHMS]
-        threshold = len(ensemble) - CONSENSUS
-        if ensemble.count(False) <= threshold:
-            if ENABLE_SECOND_ORDER:
-                if is_anomalously_anomalous(metric_name, ensemble, timeseries[-1][1]):
-                    return True, ensemble, timeseries[-1][1]
-            else:
-                return True, ensemble, timeseries[-1][1]
-
-        return False, ensemble, timeseries[-1][1]
-    except:
-        logging.error("Algorithm error: " + traceback.format_exc())
-        return False, [], 1
