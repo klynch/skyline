@@ -1,258 +1,203 @@
-import logging
-from Queue import Empty
 from redis import StrictRedis
-from time import time, sleep
-from threading import Thread
-from collections import defaultdict
-from multiprocessing import Process, Manager, Queue
-from msgpack import Unpacker, unpackb, packb
-from os import path, kill, getpid, system
-from math import ceil
+from twisted.internet import reactor
+from twisted.python import log
+import logging
 import traceback
-import operator
-import socket
-import settings
+import msgpack
 import re
+import settings
+import time
 
 from alerters import trigger_alert
-from algorithms import run_selected_algorithm
 from algorithm_exceptions import *
+from algorithms import *
 
-logger = logging.getLogger("AnalyzerLog")
 
-try:
-  SERVER_METRIC_PATH = settings.SERVER_METRICS_NAME + '.'
-except:
-  SERVER_METRIC_PATH = ''
+def analyze_forever(analyzer):
+    while reactor.running:
+        try:
+            analyzer.run()
+        except:
+            log.err()
+    # The writer thread only sleeps when the cache is empty or an error occurs
+    time.sleep(1)
 
-class Analyzer(Thread):
-    def __init__(self, parent_pid):
+
+def emit(metric, value):
+    log.msg(metric + " " + value)
+
+
+def is_anomalously_anomalous(metric_name, ensemble, datapoint):
+    """
+    This method runs a meta-analysis on the metric to determine whether the
+    metric has a past history of triggering. TODO: weight intervals based on datapoint
+    """
+    # We want the datapoint to avoid triggering twice on the same data
+    new_trigger = [time.time(), datapoint]
+
+    # Get the old history
+    raw_trigger_history = redis_conn.get('trigger_history.' + metric_name)
+    if not raw_trigger_history:
+        redis_conn.set('trigger_history.' + metric_name, packb([(time.time(), datapoint)]))
+        return True
+
+    trigger_history = unpackb(raw_trigger_history)
+
+    # Are we (probably) triggering on the same data?
+    if (new_trigger[1] == trigger_history[-1][1] and
+            new_trigger[0] - trigger_history[-1][0] <= 300):
+                return False
+
+    # Update the history
+    trigger_history.append(new_trigger)
+    redis_conn.set('trigger_history.' + metric_name, packb(trigger_history))
+
+    # Should we surface the anomaly?
+    trigger_times = [x[0] for x in trigger_history]
+    intervals = [
+        trigger_times[i + 1] - trigger_times[i]
+        for i, v in enumerate(trigger_times)
+        if (i + 1) < len(trigger_times)
+    ]
+
+    series = pandas.Series(intervals)
+    mean = series.mean()
+    stdDev = series.std()
+
+    return abs(intervals[-1] - mean) > 3 * stdDev
+
+
+class Analyzer(object):
+    def run(self):
+        print "analyzing!"
+
+    def alert(self, metric, results):
+        log.msg("alert: " + metric)
+        return True
+        for alert in settings.ALERTS:
+            if re.compile(alert[0]).match(metric):
+                try:
+                    key = 'skyline:alert:{}:{}'.format(alert[1], metric)
+                    if not self.redis_conn.exists(key):
+                        self.redis_conn.setex(key, alert[2], time.now())
+                        trigger_alert(alert, metric)
+                except Exception as e:
+                    log.err("could not send alert {} for metric {}: {}".format(alert, metric, e))
+
+    def is_anomalous(self, timeseries, metric_name):
+        """
+        Filter timeseries and run selected algorithm.
+        """
+        # Get rid of short series
+        if len(timeseries) < settings.MIN_TOLERABLE_LENGTH:
+            raise TooShort()
+
+        # Get rid of stale series
+        if (time.time() - timeseries[-1][0]) > settings.STALE_PERIOD:
+            raise Stale()
+
+        # Get rid of boring series
+        if len(set(item[1] for item in timeseries[-settings.MAX_TOLERABLE_BOREDOM:])) == settings.BOREDOM_SET_SIZE:
+            raise Boring()
+
+        ensemble = { algorithm: globals()[algorithm](timeseries) for algorithm in settings.ALGORITHMS }
+
+        if ensemble.values().count(True) >= settings.CONSENSUS:
+            return True, ensemble, timeseries[-1]
+
+        # Check for second order anomalies
+        if settings.ENABLE_SECOND_ORDER:
+            if is_anomalously_anomalous(metric_name, ensemble, timeseries[-1][1]):
+                return True, ensemble, timeseries[-1]
+
+        return False, ensemble, timeseries[-1]
+
+
+
+
+class RedisAnalyzer(Analyzer):
+    def __init__(self):
         """
         Initialize the Analyzer
         """
-        super(Analyzer, self).__init__()
+        #We should not need to reconnect
+        log.msg("RedisPublisher connecting to redis: {0}".format(settings.REDIS_OPTS))
         self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
-        self.daemon = True
-        self.parent_pid = parent_pid
-        self.current_pid = getpid()
-        self.anomalous_metrics = Manager().list()
-        self.exceptions_q = Queue()
-        self.anomaly_breakdown_q = Queue()
+        self.pipe = self.redis_conn.pipeline()
 
-    def check_if_parent_is_alive(self):
-        """
-        Self explanatory
-        """
-        try:
-            kill(self.current_pid, 0)
-            kill(self.parent_pid, 0)
-        except:
-            exit(0)
+    def waitfor_connection(self):
+        while reactor.running:
+            try:
+                if self.redis_conn.ping():
+                    return True
+                else:
+                    log.err("RedisAnalyzer ping returned false?")
+                    time.sleep(10)
+            except Exception as e:
+                log.err("RedisAnalyzer can't ping redis: {0}".format(e))
+                time.sleep(10)
 
-    def send_graphite_metric(self, name, value):
-        if settings.GRAPHITE_HOST != '':
-            sock = socket.socket()
-            sock.connect((settings.GRAPHITE_HOST, settings.CARBON_PORT))
-            sock.sendall('%s %s %i\n' % (name, value, time()))
-            sock.close()
-            return True
+    def run(self):
+        while reactor.running:
+            self.waitfor_connection()
+            # Check existence of a newly updated metic
+            metric = self.redis_conn.spop("skyline:metricset:updated")
+            if metric:
+                self.process(metric)
+                #TODO trim metric
+            else:
+                if int(time.time()) % 60 == 0:
+                    log.msg("nothing to do")
+                time.sleep(1)
+            #TODO send codahale metrics
 
-        return False
-
-    def spin_process(self, i, unique_metrics):
+    def process(self, metric):
         """
         Assign a bunch of metrics for a process to analyze.
         """
-        # Discover assigned metrics
-        keys_per_processor = int(ceil(float(len(unique_metrics)) / float(settings.ANALYZER_PROCESSES)))
-        if i == settings.ANALYZER_PROCESSES:
-            assigned_max = len(unique_metrics)
-        else:
-            assigned_max = min(len(unique_metrics), i * keys_per_processor)
-        assigned_min = (i - 1) * keys_per_processor
-        assigned_keys = range(assigned_min, assigned_max)
-
-        # Compile assigned metrics
-        assigned_metrics = [unique_metrics[index] for index in assigned_keys]
-
-        # Check if this process is unnecessary
-        if len(assigned_metrics) == 0:
-            return
-
-        # Multi get series
-        raw_assigned = self.redis_conn.mget(assigned_metrics)
-
-        # Make process-specific dicts
-        exceptions = defaultdict(int)
-        anomaly_breakdown = defaultdict(int)
-
-        # Distill timeseries strings into lists
-        for i, metric_name in enumerate(assigned_metrics):
-            self.check_if_parent_is_alive()
-
+        if metric:
+            # Fetch the metric metadata and data
+            metric_info = self.redis_conn.hgetall("skyline:metric:{0}:info".format(metric))
+            metric_data = self.redis_conn.get("skyline:metric:{0}:data".format(metric))
             try:
-                raw_series = raw_assigned[i]
-                unpacker = Unpacker(use_list = False)
-                unpacker.feed(raw_series)
-                timeseries = list(unpacker)
+                packer = msgpack.Unpacker(use_list=False)
+                packer.feed(metric_data)
+                timeseries = list(packer)
+                anomalous, ensemble, datapoint = self.is_anomalous(timeseries, metric)
 
-                anomalous, ensemble, datapoint = run_selected_algorithm(timeseries, metric_name)
+                # Get the anomaly breakdown - who returned True?
+                for algorithm, result in ensemble.iteritems():
+                    if result:
+                        emit("skyline.analyzer.anomaly.{}".format(algorithm), metric)
 
-                # If it's anomalous, add it to list
+                # Update the datastore with the results
+                with self.redis_conn.pipeline() as pipe:
+                    now = time.time()
+                    # Update the anomalous results
+                    if anomalous:
+                        pipe.zadd("skyline:metricset:anomalous", now, metric)
+                        pipe.hset("skyline:metric:{0}:info".format(metric), "last_anomaly_at", now)
+                        pipe.hset("skyline:metric:{0}:info".format(metric), "last_anomaly_timestamp", datapoint[0])
+                        pipe.hset("skyline:metric:{0}:info".format(metric), "last_anomaly_value", datapoint[1])
+                        pipe.hmset("skyline:metric:{0}:last_anomaly_results".format(metric), ensemble)
+
+                    # Update the current results
+                    pipe.hset("skyline:metric:{0}:info".format(metric), "is_anomalous", anomalous)
+                    pipe.hset("skyline:metric:{0}:info".format(metric), "last_analyzed_at", now)
+                    pipe.hset("skyline:metric:{0}:info".format(metric), "last_analyzed_timestamp", datapoint[0])
+                    pipe.hset("skyline:metric:{0}:info".format(metric), "last_analyzed_value", datapoint[1])
+                    pipe.hmset("skyline:metric:{0}:last_analyzed_results".format(metric), ensemble)
+                    pipe.execute()
+
+                # Send out alerts
                 if anomalous:
-                    base_name = metric_name.replace(settings.FULL_NAMESPACE, '', 1)
-                    metric = [datapoint, base_name]
-                    self.anomalous_metrics.append(metric)
+                    emit("skyline.analyzer.metric.anomalous", metric)
+                    self.alert(metric, ensemble)
+                else:
+                    emit("skyline.analyzer.metric.ok", metric)
 
-                    # Get the anomaly breakdown - who returned True?
-                    for index, value in enumerate(ensemble):
-                        if value:
-                            algorithm = settings.ALGORITHMS[index]
-                            anomaly_breakdown[algorithm] += 1
-
-            # It could have been deleted by the Roomba
-            except TypeError:
-                exceptions['DeletedByRoomba'] += 1
-            except TooShort:
-                exceptions['TooShort'] += 1
-            except Stale:
-                exceptions['Stale'] += 1
-            except Boring:
-                exceptions['Boring'] += 1
-            except:
-                exceptions['Other'] += 1
-                logger.info(traceback.format_exc())
-
-        # Add values to the queue so the parent process can collate
-        for key, value in anomaly_breakdown.items():
-            self.anomaly_breakdown_q.put((key, value))
-
-        for key, value in exceptions.items():
-            self.exceptions_q.put((key, value))
-
-    def run(self):
-        """
-        Called when the process intializes.
-        """
-        while 1:
-            now = time()
-
-            # Make sure Redis is up
-            try:
-                self.redis_conn.ping()
-            except:
-                logger.error('skyline can\'t connect to redis')
-                sleep(10)
-                self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
-                continue
-
-            # Discover unique metrics
-            unique_metrics = list(self.redis_conn.smembers(settings.FULL_NAMESPACE + 'unique_metrics'))
-
-            if len(unique_metrics) == 0:
-                logger.info('no metrics in redis. try adding some - see README')
-                sleep(10)
-                continue
-
-            # Spawn processes
-            pids = []
-            for i in range(1, settings.ANALYZER_PROCESSES + 1):
-                if i > len(unique_metrics):
-                    logger.info('WARNING: skyline is set for more cores than needed.')
-                    break
-
-                p = Process(target=self.spin_process, args=(i, unique_metrics))
-                pids.append(p)
-                p.start()
-
-            # Send wait signal to zombie processes
-            for p in pids:
-                p.join()
-
-            # Grab data from the queue and populate dictionaries
-            exceptions = dict()
-            anomaly_breakdown = dict()
-            while 1:
-                try:
-                    key, value = self.anomaly_breakdown_q.get_nowait()
-                    if key not in anomaly_breakdown.keys():
-                        anomaly_breakdown[key] = value
-                    else:
-                        anomaly_breakdown[key] += value
-                except Empty:
-                    break
-
-            while 1:
-                try:
-                    key, value = self.exceptions_q.get_nowait()
-                    if key not in exceptions.keys():
-                        exceptions[key] = value
-                    else:
-                        exceptions[key] += value
-                except Empty:
-                    break
-
-            # Send alerts
-            if settings.ENABLE_ALERTS:
-                for alert in settings.ALERTS:
-                    for metric in self.anomalous_metrics:
-                        ALERT_MATCH_PATTERN = alert[0]
-                        METRIC_PATTERN = metric[1]
-                        alert_match_pattern = re.compile(ALERT_MATCH_PATTERN)
-                        pattern_match = alert_match_pattern.match(METRIC_PATTERN)
-                        if pattern_match:
-                            cache_key = 'last_alert.%s.%s' % (alert[1], metric[1])
-                            try:
-                                last_alert = self.redis_conn.get(cache_key)
-                                if not last_alert:
-                                    self.redis_conn.setex(cache_key, alert[2], packb(metric[0]))
-                                    trigger_alert(alert, metric)
-                            except Exception as e:
-                                logger.error("couldn't send alert: %s" % e)
-
-            # Write anomalous_metrics to static webapp directory
-            filename = path.abspath(path.join(path.dirname(__file__), '..', settings.ANOMALY_DUMP))
-            with open(filename, 'w') as fh:
-                # Make it JSONP with a handle_data() function
-                anomalous_metrics = list(self.anomalous_metrics)
-                anomalous_metrics.sort(key=operator.itemgetter(1))
-                fh.write('handle_data(%s)' % anomalous_metrics)
-
-            # Log progress
-            logger.info('seconds to run    :: %.2f' % (time() - now))
-            logger.info('total metrics     :: %d' % len(unique_metrics))
-            logger.info('total analyzed    :: %d' % (len(unique_metrics) - sum(exceptions.values())))
-            logger.info('total anomalies   :: %d' % len(self.anomalous_metrics))
-            logger.info('exception stats   :: %s' % exceptions)
-            logger.info('anomaly breakdown :: %s' % anomaly_breakdown)
-
-            # Log to Graphite
-            self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'run_time', '%.2f' % (time() - now))
-            self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'total_analyzed', len(unique_metrics) - sum(exceptions.values()))
-            self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'total_anomalies', len(self.anomalous_metrics))
-            self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'total_metrics', len(unique_metrics))
-            for key, value in exceptions.items():
-                self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'exceptions.' + key, value)
-            for key, value in anomaly_breakdown.items():
-                self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'anomaly_breakdown.' + key, value)
-
-            # Check canary metric
-            raw_series = self.redis_conn.get(settings.FULL_NAMESPACE + settings.CANARY_METRIC)
-            if raw_series is not None:
-                unpacker = Unpacker(use_list = False)
-                unpacker.feed(raw_series)
-                timeseries = list(unpacker)
-                time_human = (timeseries[-1][0] - timeseries[0][0]) / 3600
-                projected = 24 * (time() - now) / time_human
-
-                logger.info('canary duration   :: %.2f' % time_human)
-                self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'duration', '%.2f' % time_human)
-                self.send_graphite_metric('skyline.analyzer.' + SERVER_METRIC_PATH + 'projected', '%.2f' % projected)
-
-            # Reset counters
-            self.anomalous_metrics[:] = []
-
-            # Sleep if it went too fast
-            if time() - now < 5:
-                logger.info('sleeping due to low run time...')
-                sleep(10)
+            except (TooShort, Stale, Boring) as e:
+                emit("skyline.analyzer.exception.{}".format(e.__class__.__name__), metric)
+            except Exception as e:
+                emit("skyline.analyzer.exception.Other", metric)
+                log.err(e)
