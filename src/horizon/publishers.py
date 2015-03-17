@@ -19,11 +19,15 @@ def publish_forever(publisher):
       publisher.publishCachedData()
     except:
       log.err()
+    # The writer thread only sleeps when the cache is empty or an error occurs
+    time.sleep(1)
 
-    time.sleep(1)  # The writer thread only sleeps when the cache is empty or an error occurs
+
+class Publisher:
+    pass
 
 
-class RedisPublisher:
+class RedisPublisher(Publisher):
     def __init__(self):
         #We should not need to reconnect
         log.msg("RedisPublisher connecting to redis: {0}".format(settings.REDIS_OPTS))
