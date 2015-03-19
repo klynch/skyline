@@ -5,7 +5,10 @@ from twisted.python import log
 from utils import SafeUnpickler
 
 from cache import MetricCache
+from regexlist import WhiteList, BlackList
 
+def emit(metric, value):
+    log.msg(metric + " " + value)
 
 class MetricReceiver:
   """ Base class for all metric receiving protocols, handles flow
@@ -22,6 +25,12 @@ class MetricReceiver:
       log.msg("%s connection with %s lost: %s" % (self.__class__.__name__, self.peerName, reason.value))
 
   def metricReceived(self, metric, datapoint):
+    if BlackList and metric in BlackList:
+      emit('blacklistMatches', metric)
+      return
+    if WhiteList and metric not in WhiteList:
+      emit('whiteListRejects ', metric)
+      return
     MetricCache.store(metric, datapoint)
 
 

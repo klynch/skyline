@@ -219,17 +219,13 @@ ROOMBA_GRACE_TIME = 600
 # is older than MAX_RESOLUTION seconds ago.
 MAX_RESOLUTION = 1000
 
-# These are metrics that, for whatever reason, you do not want to store
-# in Skyline. The Listener will check to see if each incoming metrics
-# contains anything in the skip list. It is generally wise to skip entire
-# namespaces by adding a '.' at the end of the skipped item - otherwise
-# you might skip things you don't intend to.  For example the default
-# skyline.analyzer.anomaly_breakdown. which MUST be skipped to prevent crazy
-# feedback.
-SKIP_LIST = [
-    '^skyline\.analyzer\.anomaly_breakdown.$',
+# These are metrics that, for whatever reason, you do not want to store in Skyline. Each entry in the blacklist and
+# whitelist is a regex, which behaves much like the graphite/carbon RegexList. The Listener will check to see if each
+# incoming metric is not in the blacklist and in the whitelist. If a list is empty, all entries will pass through it.
+BLACKLIST = [
+    '^skyline\.'
     '^example\.statsd\.metric$',
-    '^another\.example\.metric$',
+    '^another\.example\..*',
     # if you use statsd, these can result in many near-equal series
     #'_90$',
     #'\.lower$',
@@ -238,6 +234,8 @@ SKIP_LIST = [
     #'\.count_ps$',
     #'\.sum$',
 ]
+
+WHITELIST = []
 
 
 """
