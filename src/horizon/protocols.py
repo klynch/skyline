@@ -26,10 +26,10 @@ class MetricReceiver:
 
   def metricReceived(self, metric, datapoint):
     if BlackList and metric in BlackList:
-      emit('blacklistMatches', metric)
+      emit('skyline.horizon.blacklistMatches', metric)
       return
     if WhiteList and metric not in WhiteList:
-      emit('whiteListRejects ', metric)
+      emit('skyline.horizon.whiteListRejects', metric)
       return
     MetricCache.store(metric, datapoint)
 
