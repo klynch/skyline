@@ -68,6 +68,9 @@ def is_anomalously_anomalous(metric_name, ensemble, datapoint):
 
 
 class Analyzer(object):
+    def __init__(self, arguments, *args, **kwargs):
+        self.args = arguments
+
     def run(self):
         print "analyzing!"
 
@@ -106,7 +109,7 @@ class Analyzer(object):
             return True, ensemble, timeseries[-1]
 
         # Check for second order anomalies
-        if settings.ENABLE_SECOND_ORDER:
+        if self.args.enable_second_order:
             if is_anomalously_anomalous(metric_name, ensemble, timeseries[-1][1]):
                 return True, ensemble, timeseries[-1]
 
@@ -116,10 +119,12 @@ class Analyzer(object):
 
 
 class RedisAnalyzer(Analyzer):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """
         Initialize the Analyzer
         """
+        super(RedisAnalyzer, self).__init__(*args, **kwargs)
+
         #We should not need to reconnect
         log.msg("RedisPublisher connecting to redis: {0}".format(settings.REDIS_OPTS))
         self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
