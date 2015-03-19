@@ -29,7 +29,7 @@ class NoDataException(Exception):
 
 def seed_msgpack():
     print 'Loading data over UDP via Horizon...'
-    metric = 'horizon.test.udp'
+    metric = 'horizon.test.msgpack'
     initial = int(time.time()) - settings.MAX_RESOLUTION
 
     with open(join(__location__, 'data.json'), 'r') as f:
