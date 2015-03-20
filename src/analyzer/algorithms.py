@@ -3,18 +3,8 @@ import numpy as np
 import scipy
 import statsmodels.api as sm
 import time
-from msgpack import unpackb, packb
 
-from settings import (
-    ALGORITHMS,
-    FULL_DURATION,
-    MAX_TOLERABLE_BOREDOM,
-    MIN_TOLERABLE_LENGTH,
-    ENABLE_SECOND_ORDER,
-    BOREDOM_SET_SIZE,
-)
-
-from algorithm_exceptions import *
+from settings import FULL_DURATION
 
 """
 This is no man's land. Do anything you want in here,

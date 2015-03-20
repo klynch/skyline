@@ -71,13 +71,6 @@ Analyzer settings
 # It needs to be in a location accessible to the webapp.
 ANOMALY_DUMP = 'webapp/static/dump/anomalies.json'
 
-# This is the number of processes that the Skyline analyzer will spawn.
-# Analysis is a very CPU-intensive procedure. You will see optimal results
-# if you set ANALYZER_PROCESSES to several less than the total number of
-# CPUs on your box. Be sure to leave some CPU room for the Horizon workers,
-# and for Redis.
-ANALYZER_PROCESSES = 5
-
 # This is the duration, in seconds, for a metric to become 'stale' and for
 # the analyzer to ignore it until new datapoints are added. 'Staleness' means
 # that a datapoint has not been added for STALE_PERIOD seconds.
@@ -199,8 +192,7 @@ Horizon settings
 # chunks are prevented from being added. If you consistently fill up the
 # processing queue, a higher MAX_QUEUE_SIZE will not save you. It most likely
 # means that the workers do not have enough CPU alotted in order to process the
-# queue on time. Try increasing CHUNK_SIZE, decreasing ANALYZER_PROCESSES, or
-# decreasing ROOMBA_PROCESSES.
+# queue on time. Try increasing CHUNK_SIZE, or decreasing ROOMBA_PROCESSES.
 MAX_QUEUE_SIZE = 500
 
 # This is the number of Roomba processes that will be spawned to trim
