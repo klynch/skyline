@@ -105,7 +105,7 @@ class Analyzer(object):
 
         ensemble = { algorithm: globals()[algorithm](timeseries) for algorithm in settings.ALGORITHMS }
 
-        if ensemble.values().count(True) >= settings.CONSENSUS:
+        if ensemble.values().count(True) >= self.args.consensus:
             return True, ensemble, timeseries[-1]
 
         # Check for second order anomalies

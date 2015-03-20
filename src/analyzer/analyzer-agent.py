@@ -36,6 +36,7 @@ if __name__ == "__main__":
     """
     parser = argparse.ArgumentParser(description='Analyze metrics for anomalies.')
     parser.add_argument("--enable-second-order", action="store_true", default=False, help="This is to enable second order anomalies. (EXPERIMENTAL)")
+    parser.add_argument("-c", "--consensus", type=int, default=6, help="The number of algorithms that must return True before a metric is classified as anomalous")
     args = parser.parse_args()
 
     log.startLogging(sys.stdout)

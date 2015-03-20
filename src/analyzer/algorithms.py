@@ -7,7 +7,6 @@ from msgpack import unpackb, packb
 
 from settings import (
     ALGORITHMS,
-    CONSENSUS,
     FULL_DURATION,
     MAX_TOLERABLE_BOREDOM,
     MIN_TOLERABLE_LENGTH,
