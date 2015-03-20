@@ -38,7 +38,7 @@ var handle_data = function(data) {
 // The callback to this function is handle_data()
 var pull_data = function() {
     $.ajax({
-        url: "/static/dump/anomalies.json",
+        url: "/api/anomalies",
         dataType: 'jsonp'
     });
 };
@@ -49,7 +49,7 @@ var handle_interaction = function() {
 
     anomalous_datapoint = parseInt($($('.selected').children('.count')).text());
 
-    $.get("/api?metric=" + FULL_NAMESPACE + "" + selected, function(d){
+    $.get("/api/metric/?metric=" + FULL_NAMESPACE + "" + selected, function(d){
         big_data = JSON.parse(d)['results'];
         big_graph.updateOptions( { 'file': big_data } );
         offset = (new Date().getTime() / 1000) - 3600;

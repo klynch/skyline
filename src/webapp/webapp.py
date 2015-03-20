@@ -24,17 +24,21 @@ def index():
 
 @app.route("/app_settings")
 def app_settings():
-
     app_settings = {'GRAPH_URL': settings.GRAPH_URL,
                     'OCULUS_HOST': settings.OCULUS_HOST,
                     'FULL_NAMESPACE': settings.FULL_NAMESPACE,
                     }
-
     resp = json.dumps(app_settings)
     return resp, 200
 
 
-@app.route("/api", methods=['GET'])
+@app.route("/api/anomalies", methods=['GET'])
+def anomalies():
+    resp = "handle_data()"
+    return resp, 200
+
+
+@app.route("/api/metric", methods=['GET'])
 def data():
     metric = request.args.get('metric', None)
     try:
