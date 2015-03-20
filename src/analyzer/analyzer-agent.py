@@ -37,6 +37,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Analyze metrics for anomalies.')
     parser.add_argument("--enable-second-order", action="store_true", default=False, help="This is to enable second order anomalies. (EXPERIMENTAL)")
     parser.add_argument("-c", "--consensus", type=int, default=6, help="The number of algorithms that must return True before a metric is classified as anomalous")
+    parser.add_argument("--min-tolerable-length", type=int, default=1, help="The minimum length of a timeseries, in datapoints, for the analyzer to recognize it as a complete series")
+    parser.add_argument("--max-tolerable-boredom", type=int, default=100, help="Sometimes a metric will continually transmit the same number. There's no need to analyze metrics that remain boring like this, so this setting determines the amount of boring datapoints that will be allowed to accumulate before the analyzer skips over the metric. If the metric becomes noisy again, the analyzer will stop ignoring it.")
+    parser.add_argument("--boredom-set-size", type=int, default=1, help="By default, the analyzer skips a metric if it it has transmitted a single number MAX_TOLERABLE_BOREDOM times. Change this setting if you wish the size of the ignored set to be higher (ie, ignore the metric if there have only been two different values for the past MAX_TOLERABLE_BOREDOM datapoints). This is useful for timeseries that often oscillate between two values.")
+    parser.add_argument("--stale-period", type=int, default=500, help="The duration, in seconds, for a metric to become 'stale' and for the analyzer to ignore it until new datapoints are added. 'Staleness' means that a datapoint has not been added for STALE_PERIOD seconds")
     args = parser.parse_args()
 
     log.startLogging(sys.stdout)

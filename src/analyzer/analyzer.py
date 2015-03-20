@@ -67,15 +67,15 @@ class Analyzer(object):
         Filter timeseries and run selected algorithm.
         """
         # Get rid of short series
-        if len(timeseries) < settings.MIN_TOLERABLE_LENGTH:
+        if len(timeseries) < self.args.min_tolerable_length:
             raise TooShort()
 
         # Get rid of stale series
-        if (time.time() - timeseries[-1][0]) > settings.STALE_PERIOD:
+        if (time.time() - timeseries[-1][0]) > self.args.stale_period:
             raise Stale()
 
         # Get rid of boring series
-        if len(set(item[1] for item in timeseries[-settings.MAX_TOLERABLE_BOREDOM:])) == settings.BOREDOM_SET_SIZE:
+        if len(set(item[1] for item in timeseries[-self.args.max_tolerable_boredom:])) == self.args.boredom_set_size:
             raise Boring()
 
         ensemble = { algorithm: getattr(algorithms, algorithm)(timeseries) for algorithm in settings.ALGORITHMS }
