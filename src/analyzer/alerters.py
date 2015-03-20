@@ -74,17 +74,3 @@ def alert_syslog(alert, metric):
     else:
         syslog.openlog(syslog_ident, syslog.LOG_PID, syslog.LOG_LOCAL4)
     syslog.syslog(4, message)
-
-
-def trigger_alert(alert, metric):
-
-    target = None
-    if callable(alert[1]):
-        target = alert[1]
-    else:
-        if '@' in alert[1]:
-            strategy = 'alert_smtp'
-        else:
-            strategy = 'alert_' + alert[1]
-        target = getattr(alerters, strategy)
-    target(alert, metric)

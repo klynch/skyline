@@ -7,10 +7,8 @@ import msgpack
 import re
 import settings
 import time
-
-from alerters import trigger_alert
-from algorithm_exceptions import *
-from algorithms import *
+import alerters
+import algorithms
 
 
 class TooShort(Exception):
@@ -23,6 +21,11 @@ class Stale(Exception):
 
 class Boring(Exception):
     pass
+
+
+def trigger_alert(alert, metric):
+    target = getattr(alerters, 'alert_{0}'.format(alert[1]))
+    target(alert, metric)
 
 
 def analyze_forever(analyzer):
@@ -75,7 +78,7 @@ class Analyzer(object):
         if len(set(item[1] for item in timeseries[-settings.MAX_TOLERABLE_BOREDOM:])) == settings.BOREDOM_SET_SIZE:
             raise Boring()
 
-        ensemble = { algorithm: globals()[algorithm](timeseries) for algorithm in settings.ALGORITHMS }
+        ensemble = { algorithm: getattr(algorithms, algorithm)(timeseries) for algorithm in settings.ALGORITHMS }
 
         if ensemble.values().count(True) >= self.args.consensus:
             return True, ensemble, timeseries[-1]
