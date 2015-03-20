@@ -27,46 +27,6 @@ def emit(metric, value):
     log.msg(metric + " " + value)
 
 
-def is_anomalously_anomalous(metric_name, ensemble, datapoint):
-    """
-    This method runs a meta-analysis on the metric to determine whether the
-    metric has a past history of triggering. TODO: weight intervals based on datapoint
-    """
-    # We want the datapoint to avoid triggering twice on the same data
-    new_trigger = [time.time(), datapoint]
-
-    # Get the old history
-    raw_trigger_history = redis_conn.get('trigger_history.' + metric_name)
-    if not raw_trigger_history:
-        redis_conn.set('trigger_history.' + metric_name, packb([(time.time(), datapoint)]))
-        return True
-
-    trigger_history = unpackb(raw_trigger_history)
-
-    # Are we (probably) triggering on the same data?
-    if (new_trigger[1] == trigger_history[-1][1] and
-            new_trigger[0] - trigger_history[-1][0] <= 300):
-                return False
-
-    # Update the history
-    trigger_history.append(new_trigger)
-    redis_conn.set('trigger_history.' + metric_name, packb(trigger_history))
-
-    # Should we surface the anomaly?
-    trigger_times = [x[0] for x in trigger_history]
-    intervals = [
-        trigger_times[i + 1] - trigger_times[i]
-        for i, v in enumerate(trigger_times)
-        if (i + 1) < len(trigger_times)
-    ]
-
-    series = pandas.Series(intervals)
-    mean = series.mean()
-    stdDev = series.std()
-
-    return abs(intervals[-1] - mean) > 3 * stdDev
-
-
 class Analyzer(object):
     def __init__(self, arguments, *args, **kwargs):
         self.args = arguments
@@ -110,11 +70,47 @@ class Analyzer(object):
 
         # Check for second order anomalies
         if self.args.enable_second_order:
-            if is_anomalously_anomalous(metric_name, ensemble, timeseries[-1][1]):
+            if self.is_anomalously_anomalous(metric_name, ensemble, timeseries[-1]):
                 return True, ensemble, timeseries[-1]
 
         return False, ensemble, timeseries[-1]
 
+
+    def is_anomalously_anomalous(self, metric_name, ensemble, datapoint):
+        """
+        This method runs a meta-analysis on the metric to determine whether the
+        metric has a past history of triggering. TODO: weight intervals based on datapoint
+        """
+        # We want the datapoint to avoid triggering twice on the same data
+        new_trigger = [time.time(), datapoint[1]]
+
+        # Get the old history
+        raw_trigger_history = redis_conn.get('trigger_history:' + metric_name)
+        if not raw_trigger_history:
+            redis_conn.set('trigger_history:' + metric_name, packb([(time.time(), datapoint[1])]))
+            return True
+
+        trigger_history = unpackb(raw_trigger_history)
+
+        # Are we (probably) triggering on the same data?
+        if (new_trigger[1] == trigger_history[-1][1] and
+            new_trigger[0] - trigger_history[-1][0] <= 300):
+            return False
+
+        # Update the history
+        trigger_history.append(new_trigger)
+        redis_conn.set('trigger_history.' + metric_name, packb(trigger_history))
+
+        # Should we surface the anomaly?
+        trigger_times = [x[0] for x in trigger_history]
+        intervals = [
+            trigger_times[i + 1] - trigger_times[i]
+            for i, v in enumerate(trigger_times)
+            if (i + 1) < len(trigger_times)
+        ]
+
+        series = pandas.Series(intervals)
+        return abs(intervals[-1] - series.mean()) > 3 * series.std()
 
 
 
