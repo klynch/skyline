@@ -7,7 +7,7 @@ import msgpack
 import re
 import settings
 import time
-import alerters
+import alerts
 import algorithms
 
 
