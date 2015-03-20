@@ -16,10 +16,10 @@ var handle_data = function(data) {
 
     for (i in data) {
         metric = data[i];
-        name = metric[1]
+        name = metric[1];
         var src = GRAPH_URL.replace('%s', name);
         // Add a space after the metric name to make each unique
-        to_append = "<div class='sub'><a target='_blank' href='" + src + "'><div class='name'>" + name + " </div></a>&nbsp;&nbsp;"
+        to_append = "<div class='sub'><a target='_blank' href='" + src + "'><div class='name'>" + name + " </div></a>&nbsp;&nbsp;";
         if (OCULUS_HOST != ''){
           to_append += "<a class='oculus' target='_blank' href=" + OCULUS_HOST + "/search?p_slop=20&dtw_radius=5&search_type=FastDTW&query=" + name + "&page=&filters=><i class='icon-share-alt'></i></a>";
         }
@@ -33,7 +33,7 @@ var handle_data = function(data) {
     }
 
     handle_interaction();
-}
+};
 
 // The callback to this function is handle_data()
 var pull_data = function() {
@@ -41,14 +41,14 @@ var pull_data = function() {
         url: "/static/dump/anomalies.json",
         dataType: 'jsonp'
     });
-}
+};
 
 var handle_interaction = function() {
     $('.sub').removeClass('selected');
     $('.sub:contains(' + selected + ')').addClass('selected');
 
-    anomalous_datapoint = parseInt($($('.selected').children('.count')).text())
- 
+    anomalous_datapoint = parseInt($($('.selected').children('.count')).text());
+
     $.get("/api?metric=" + FULL_NAMESPACE + "" + selected, function(d){
         big_data = JSON.parse(d)['results'];
         big_graph.updateOptions( { 'file': big_data } );
@@ -57,7 +57,7 @@ var handle_interaction = function() {
           return value[0] > offset;
         });
         mini_graph.updateOptions( { 'file': mini_data } );
-    }); 
+    });
 
 
     $('#graph_title').html(selected);
@@ -157,7 +157,7 @@ $(function(){
         pull_data();
 
         $(window).resize();
-    })
+    });
 
     // Update every thirty seconds
     window.setInterval(pull_data, 30000);
@@ -169,9 +169,9 @@ $(function(){
             selected = temp;
             handle_interaction();
         }
-    })
+    });
 
-    // Responsive graphs 
+    // Responsive graphs
     $(window).resize(function() {
         resize_window();
     });
@@ -181,7 +181,7 @@ $(function(){
 var resize_window = function() {
     mini_graph.resize($('#graph_container').width() - 7, ($('#graph_container').height() * (2/3)));
     big_graph.resize($('#graph_container').width() - 7, ($('#graph_container').height() * (1/3) - 5));
-}
+};
 
 // Handle keyboard navigation
 Mousetrap.bind(['up', 'down'], function(ev) {
@@ -198,9 +198,7 @@ Mousetrap.bind(['up', 'down'], function(ev) {
     if ($(next).html() != undefined) {
         selected = $(next).find('.name')[0].innerHTML;
         handle_interaction();
-    } 
+    }
 
     return false;
 }, 'keydown');
-
-
