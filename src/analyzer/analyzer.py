@@ -13,6 +13,18 @@ from algorithm_exceptions import *
 from algorithms import *
 
 
+class TooShort(Exception):
+    pass
+
+
+class Stale(Exception):
+    pass
+
+
+class Boring(Exception):
+    pass
+
+
 def analyze_forever(analyzer):
     while reactor.running:
         try:
