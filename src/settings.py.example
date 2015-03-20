@@ -7,21 +7,8 @@ REDIS_OPTS = {
   'host': 'localhost',
   'port': 6379,
 }
-
-# The Skyline logs directory. Do not include a trailing slash.
-LOG_PATH = '/var/log/skyline'
-
-# The Skyline pids directory. Do not include a trailing slash.
-PID_PATH = '/var/run/skyline'
-
 # Metrics will be prefixed with this value in Redis.
 FULL_NAMESPACE = 'skyline:metric'
-
-# Key where the set of recently updated metrics is stored for future processing
-UPDATED_METRIC_SET_KEY = 'skyline:metricset:updated'
-
-# Key where the set of all metrics is stored. This is used for housekeeping
-ALL_METRIC_SET_KEY = 'skyline:metricset:all'
 
 # The Horizon agent will make T'd writes to both the full namespace and the
 # mini namespace. Oculus gets its data from everything in the mini namespace.
@@ -56,21 +43,9 @@ CARBON_PORT = 2003
 # will occur when Oculus support is disabled.
 OCULUS_HOST = 'http://your_oculus_host.com'
 
-# This is to allow for multiple skyline nodes to send metrics to a graphite
-# instance on the skyline namespace sharded by this setting, like carbon.relays.
-# If you want multiple skyline hosts, set the hostname of the skyline here e.g.
-# skyline.analyzer.run_time
-# skyline.analyzer.skyline-01.run_time
-SERVER_METRICS_NAME = ''
-
 """
 Analyzer settings
 """
-
-# This is the location the Skyline agent will write the anomalies file to disk.
-# It needs to be in a location accessible to the webapp.
-ANOMALY_DUMP = 'webapp/static/dump/anomalies.json'
-
 # This is the duration, in seconds, for a metric to become 'stale' and for
 # the analyzer to ignore it until new datapoints are added. 'Staleness' means
 # that a datapoint has not been added for STALE_PERIOD seconds.
@@ -94,10 +69,6 @@ MAX_TOLERABLE_BOREDOM = 100
 # This is useful for timeseries that often oscillate between two values.
 BOREDOM_SET_SIZE = 1
 
-# The canary metric should be a metric with a very high, reliable resolution
-# that you can use to gauge the status of the system as a whole.
-CANARY_METRIC = 'statsd.numStats'
-
 # These are the algorithms that the Analyzer will run. To add a new algorithm,
 # you must both define the algorithm in algorithms.py and add its name here.
 ALGORITHMS = [
@@ -111,14 +82,6 @@ ALGORITHMS = [
     'median_absolute_deviation',
     'ks_test',
 ]
-
-# This is the number of algorithms that must return True before a metric is
-# classified as anomalous.
-CONSENSUS = 6
-
-# This is to enable second order anomalies. This is an experimental feature, so
-# it's turned off by default.
-ENABLE_SECOND_ORDER = False
 
 # This enables alerting.
 ENABLE_ALERTS = True
@@ -188,13 +151,6 @@ SYSLOG_OPTS = {
 """
 Horizon settings
 """
-# This is the maximum allowable length of the processing queue before new
-# chunks are prevented from being added. If you consistently fill up the
-# processing queue, a higher MAX_QUEUE_SIZE will not save you. It most likely
-# means that the workers do not have enough CPU alotted in order to process the
-# queue on time. Try increasing CHUNK_SIZE, or decreasing ROOMBA_PROCESSES.
-MAX_QUEUE_SIZE = 500
-
 # This is the number of Roomba processes that will be spawned to trim
 # timeseries in order to keep them at FULL_DURATION. Keep this number small,
 # as it is not important that metrics be exactly FULL_DURATION *all* the time.
@@ -228,14 +184,3 @@ BLACKLIST = [
 ]
 
 WHITELIST = []
-
-
-"""
-Webapp settings
-"""
-
-# The IP address for the webapp
-WEBAPP_IP = '127.0.0.1'
-
-# The port for the webapp
-WEBAPP_PORT = 1500

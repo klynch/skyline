@@ -58,9 +58,8 @@ class RedisPublisher(Publisher):
         self.pipe.hincrby(info_key, 'length', len(list(datapoints)))
         self.pipe.hset(info_key, 'updated_at', time.time())
 
-        #Add the metric to the unique metric set
-        self.pipe.sadd(settings.UPDATED_METRIC_SET_KEY, metric)
-        self.pipe.sadd(settings.ALL_METRIC_SET_KEY, metric)
+        self.pipe.sadd('skyline:metricset:updated', metric) #Key where the set of recently updated metrics is stored
+        self.pipe.sadd('skyline:metricset:all', metric) #Key where the set of all known metrics is stored
         self.pipe.execute()
 
 
