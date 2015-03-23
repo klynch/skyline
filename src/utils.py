@@ -71,10 +71,3 @@ def send_graphite_metric(name, value):
         return True
 
     return False
-
-
-def metric_info_key(metric):
-  return ':'.join((settings.FULL_NAMESPACE, metric, 'info'))
-
-def metric_data_key(metric):
-  return ':'.join((settings.FULL_NAMESPACE, metric, 'data'))

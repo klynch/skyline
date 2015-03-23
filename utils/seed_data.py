@@ -20,7 +20,6 @@ __location__ = realpath(join(os.getcwd(), dirname(__file__)))
 # Add the shared settings file to namespace.
 sys.path.insert(0, join(__location__, '..', 'src'))
 import settings
-from utils import metric_data_key, metric_info_key
 
 
 class NoDataException(Exception):
@@ -87,7 +86,7 @@ if __name__ == "__main__":
     r = redis.StrictRedis(**settings.REDIS_OPTS)
 
     try:
-        members = r.smembers(settings.UPDATED_METRIC_SET_KEY)
+        members = r.smembers("skyline:metricset:all")
         if members is None:
             raise NoDataException
         for metric in metrics:
@@ -95,11 +94,11 @@ if __name__ == "__main__":
                 print "Missing metric in set: {0}".format(metric)
                 raise NoDataException
 
-        d = r.get(metric_data_key(metric))
+        d = r.get("skyline:metric:{0}:data".format(metric))
         if d is None:
             raise NoDataException
 
-        h = r.hgetall(metric_info_key(metric))
+        h = r.hgetall("skyline:metric:{0}:info".format(metric))
         if h is None:
             raise NoDataException
 
