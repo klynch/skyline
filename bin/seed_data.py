@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import json
 import os
 import pickle
@@ -43,11 +44,11 @@ def seed_msgpack():
             sock.sendto(packet, (socket.gethostname(), settings.UDP_PORT))
 
 
-def seed_line():
+def seed_line(datafile):
     print 'Loading data over line via Horizon...'
     metric = 'horizon.test.line'
     initial = int(time.time()) - settings.MAX_RESOLUTION
-    with open(join(__location__, 'data.json'), 'r') as f:
+    with open(datafile, 'r') as f:
         data = json.loads(f.read())
         series = data['results']
         sock = socket.socket()
@@ -60,11 +61,11 @@ def seed_line():
     return metric
 
 
-def seed_udp():
+def seed_udp(datafile):
     print 'Loading data over udp via Horizon...'
     metric = 'horizon.test.udp'
     initial = int(time.time()) - settings.MAX_RESOLUTION
-    with open(join(__location__, 'data.json'), 'r') as f:
+    with open(datafile, 'r') as f:
         data = json.loads(f.read())
         series = data['results']
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -75,11 +76,14 @@ def seed_udp():
     return metric
 
 
-
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Seed data.')
+    parser.add_argument("-d", "--data", required=True, help="seed data file")
+    args = parser.parse_args()
+
     metrics = [
-        seed_line(),
-        seed_udp(),
+        seed_line(args.data),
+        seed_udp(args.data),
     ]
 
     print "Connecting to Redis..."
