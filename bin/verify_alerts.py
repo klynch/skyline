@@ -27,7 +27,6 @@ parser.add_option("-m", "--metric", dest="metric", default='skyline.horizon.queu
 (options, args) = parser.parse_args()
 
 try:
-    alerts_enabled = settings.ENABLE_ALERTS
     alerts = settings.ALERTS
 except:
     print "Exception: Check your settings file for the existence of ENABLE_ALERTS and ALERTS"
@@ -36,13 +35,10 @@ except:
 print 'Verifying alerts for: "' + options.metric + '"'
 
 # Send alerts
-if alerts_enabled:
-    for alert in alerts:
-        if alert[0] in options.metric:
-            print '    Testing against "' + alert[0] + '" to send via ' + alert[1] + "...triggered"
-            if options.trigger:
-                trigger_alert(alert, options.metric)
-        else:
-            print '    Testing against "' + alert[0] + '" to send via ' + alert[1] + "..."
-else:
-    print 'Alerts are disabled'
+for alert in alerts:
+    if alert[0] in options.metric:
+        print '    Testing against "' + alert[0] + '" to send via ' + alert[1] + "...triggered"
+        if options.trigger:
+            trigger_alert(alert, options.metric)
+    else:
+        print '    Testing against "' + alert[0] + '" to send via ' + alert[1] + "..."

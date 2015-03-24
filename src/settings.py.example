@@ -8,18 +8,6 @@ REDIS_OPTS = {
   'port': 6379,
 }
 
-# This is the rolling duration that will be stored in Redis. Be sure to pick a
-# value that suits your memory capacity, your CPU capacity, and your overall
-# metrics count. Longer durations take a longer to analyze, but they can
-# help the algorithms reduce the noise and provide more accurate anomaly
-# detection.
-FULL_DURATION = 86400
-
-# This is the duration of the 'mini' namespace, if you are also using the
-# Oculus service. It is also the duration of data that is displayed in the
-# web app 'mini' view.
-MINI_DURATION = 3600
-
 # If you have a Graphite host set up, set this metric to get graphs on
 # Skyline and Horizon. Don't include http:// since this is used for carbon host as well.
 GRAPHITE_HOST = 'your_graphite_host.com'
@@ -30,12 +18,6 @@ GRAPH_URL = 'http://' + GRAPHITE_HOST + '/render/?width=1400&from=-1hour&target=
 
 # If you have a Graphite host set up, set its Carbon port.
 CARBON_PORT = 2003
-
-# If you have Oculus set up, set this metric to set the clickthrough on the
-# webapp. Include http://. If you don't want to use Oculus, set this to an
-# empty string. If you comment this out, Skyline won't work! Speed improvements
-# will occur when Oculus support is disabled.
-OCULUS_HOST = 'http://your_oculus_host.com'
 
 """
 Analyzer settings
@@ -76,9 +58,6 @@ ALGORITHMS = [
     'median_absolute_deviation',
     'ks_test',
 ]
-
-# This enables alerting.
-ENABLE_ALERTS = True
 
 # This is the config for which metrics to alert on and which strategy to use for each.
 # Alerts will not fire twice within EXPIRATION_TIME, even if they trigger again.
