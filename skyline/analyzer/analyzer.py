@@ -78,7 +78,7 @@ class Analyzer(object):
         if len(set(item[1] for item in timeseries[-self.args.max_tolerable_boredom:])) == self.args.boredom_set_size:
             raise Boring()
 
-        ensemble = { algorithm: getattr(algorithms, algorithm)(timeseries) for algorithm in settings.ALGORITHMS }
+        ensemble = { algorithm: getattr(algorithms, algorithm)(timeseries, self.args) for algorithm in settings.ALGORITHMS }
 
         if ensemble.values().count(True) >= self.args.consensus:
             return True, ensemble, timeseries[-1]

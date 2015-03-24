@@ -4,8 +4,6 @@ import scipy
 import statsmodels.api as sm
 import time
 
-from settings import FULL_DURATION
-
 """
 This is no man's land. Do anything you want in here,
 as long as you return a boolean that determines whether the input
@@ -15,7 +13,7 @@ To add an algorithm, define it here, and add its name to settings.ALGORITHMS.
 """
 
 
-def tail_avg(timeseries):
+def tail_avg(timeseries, args):
     """
     This is a utility function used to calculate the average of the last three
     datapoints in the series as a measure, instead of just the last datapoint.
@@ -29,7 +27,7 @@ def tail_avg(timeseries):
         return timeseries[-1][1]
 
 
-def median_absolute_deviation(timeseries):
+def median_absolute_deviation(timeseries, args):
     """
     A timeseries is anomalous if the deviation of its latest datapoint with
     respect to the median is X times larger than the median of deviations.
@@ -54,14 +52,14 @@ def median_absolute_deviation(timeseries):
         return False
 
 
-def grubbs(timeseries):
+def grubbs(timeseries, args):
     """
     A timeseries is anomalous if the Z score is greater than the Grubb's score.
     """
     series = scipy.array([x[1] for x in timeseries])
     stdDev = scipy.std(series)
     mean = np.mean(series)
-    tail_average = tail_avg(timeseries)
+    tail_average = tail_avg(timeseries, args)
     z_score = (tail_average - mean) / stdDev
     len_series = len(series)
     threshold = scipy.stats.t.isf(.05 / (2 * len_series), len_series - 2)
@@ -71,22 +69,22 @@ def grubbs(timeseries):
     return z_score > grubbs_score
 
 
-def first_hour_average(timeseries):
+def first_hour_average(timeseries, args):
     """
     Calcuate the simple average over one hour, FULL_DURATION seconds ago.
     A timeseries is anomalous if the average of the last three datapoints
     are outside of three standard deviations of this value.
     """
-    last_hour_threshold = time.time() - (FULL_DURATION - 3600)
+    last_hour_threshold = time.time() - (args.full_duration - 3600)
     series = pandas.Series([x[1] for x in timeseries if x[0] < last_hour_threshold])
     mean = (series).mean()
     stdDev = (series).std()
-    t = tail_avg(timeseries)
+    t = tail_avg(timeseries, args)
 
     return abs(t - mean) > 3 * stdDev
 
 
-def stddev_from_average(timeseries):
+def stddev_from_average(timeseries, args):
     """
     A timeseries is anomalous if the absolute value of the average of the latest
     three datapoint minus the moving average is greater than three standard
@@ -96,12 +94,12 @@ def stddev_from_average(timeseries):
     series = pandas.Series([x[1] for x in timeseries])
     mean = series.mean()
     stdDev = series.std()
-    t = tail_avg(timeseries)
+    t = tail_avg(timeseries, args)
 
     return abs(t - mean) > 3 * stdDev
 
 
-def stddev_from_moving_average(timeseries):
+def stddev_from_moving_average(timeseries, args):
     """
     A timeseries is anomalous if the absolute value of the average of the latest
     three datapoint minus the moving average is greater than three standard
@@ -115,7 +113,7 @@ def stddev_from_moving_average(timeseries):
     return abs(series.iget(-1) - expAverage.iget(-1)) > 3 * stdDev.iget(-1)
 
 
-def mean_subtraction_cumulation(timeseries):
+def mean_subtraction_cumulation(timeseries, args):
     """
     A timeseries is anomalous if the value of the next datapoint in the
     series is farther than three standard deviations out in cumulative terms
@@ -130,7 +128,7 @@ def mean_subtraction_cumulation(timeseries):
     return abs(series.iget(-1)) > 3 * stdDev
 
 
-def least_squares(timeseries):
+def least_squares(timeseries, args):
     """
     A timeseries is anomalous if the average of the last three datapoints
     on a projected least squares model is greater than three sigma.
@@ -156,7 +154,7 @@ def least_squares(timeseries):
     return abs(t) > std_dev * 3 and round(std_dev) != 0 and round(t) != 0
 
 
-def histogram_bins(timeseries):
+def histogram_bins(timeseries, args):
     """
     A timeseries is anomalous if the average of the last three datapoints falls
     into a histogram bin with less than 20 other datapoints (you'll need to tweak
@@ -166,7 +164,7 @@ def histogram_bins(timeseries):
     means more anomalous.
     """
     series = scipy.array([x[1] for x in timeseries])
-    t = tail_avg(timeseries)
+    t = tail_avg(timeseries, args)
     h = np.histogram(series, bins=15)
     bins = h[1]
     for index, bin_size in enumerate(h[0]):
@@ -182,14 +180,13 @@ def histogram_bins(timeseries):
     return False
 
 
-def ks_test(timeseries):
+def ks_test(timeseries, args):
     """
     A timeseries is anomalous if 2 sample Kolmogorov-Smirnov test indicates
     that data distribution for last 10 minutes is different from last hour.
     It produces false positives on non-stationary series so Augmented
     Dickey-Fuller test applied to check for stationarity.
     """
-
     hour_ago = time.time() - 3600
     ten_minutes_ago = time.time() - 600
     reference = scipy.array([x[1] for x in timeseries if x[0] >= hour_ago and x[0] < ten_minutes_ago])
