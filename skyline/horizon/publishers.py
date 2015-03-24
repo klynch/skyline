@@ -6,7 +6,6 @@ from twisted.python import log
 from msgpack import packb
 import settings
 from twisted.internet import reactor
-from utils import metric_info_key, metric_data_key
 
 #1. check if in skip list (record blacklist + whitelist hits)
 #2. check if stale data (record number of stale metrics)
@@ -50,11 +49,11 @@ class RedisPublisher(Publisher):
 
     def publish(self, metric, datapoints):
         #Append the data
-        data_key = metric_data_key(metric)
+        data_key = "skyline:metric:{0}:data".format(metric)
         self.pipe.append(data_key, ''.join(map(packb, datapoints)))
 
         #Update some metadata
-        info_key = metric_info_key(metric)
+        info_key = "skyline:metric:{0}:info".format(metric)
         self.pipe.hincrby(info_key, 'length', len(list(datapoints)))
         self.pipe.hset(info_key, 'updated_at', time.time())
 
