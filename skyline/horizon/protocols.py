@@ -2,7 +2,7 @@ from twisted.internet.error import ConnectionDone
 from twisted.internet.protocol import DatagramProtocol, ServerFactory
 from twisted.protocols.basic import LineOnlyReceiver, Int32StringReceiver
 from twisted.python import log
-from utils import SafeUnpickler
+from skyline.utils import SafeUnpickler
 
 from cache import MetricCache
 from regexlist import WhiteList, BlackList
