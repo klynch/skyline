@@ -9,9 +9,20 @@ This is no man's land. Do anything you want in here,
 as long as you return a boolean that determines whether the input
 timeseries is anomalous or not.
 
-To add an algorithm, define it here, and add its name to settings.ALGORITHMS.
+To add an algorithm, define it here, and add its name to ALGORITHMS.
 """
 
+ALGORITHMS = [
+    'first_hour_average',
+    'mean_subtraction_cumulation',
+    'stddev_from_average',
+    'stddev_from_moving_average',
+    'least_squares',
+    'grubbs',
+    'histogram_bins',
+    'median_absolute_deviation',
+    'ks_test',
+]
 
 def tail_avg(timeseries, args):
     """

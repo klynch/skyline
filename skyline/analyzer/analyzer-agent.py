@@ -19,7 +19,7 @@ def check_algorithms(args):
         ensemble = Analyzer(args).is_anomalous(timeseries, "dummy")
         log.msg("passed.")
     except KeyError as e:
-        log.msg("Algorithm {} deprecated or not defined; check settings.ALGORITHMS".format(e))
+        log.msg("Algorithm {} deprecated or not defined".format(e))
         sys.exit(1)
     except Exception as e:
         log.msg("Algorithm test run failed.")
