@@ -7,10 +7,6 @@ import time
 from twisted.python import log
 from twisted.internet import reactor
 
-# add the shared settings file to namespace
-sys.path.insert(0, dirname(dirname(abspath(__file__))))
-import settings
-
 from analyzer import analyze_forever, Analyzer, RedisAnalyzer
 
 from algorithms import *
@@ -35,6 +31,7 @@ if __name__ == "__main__":
     Start the Analyzer agent.
     """
     parser = argparse.ArgumentParser(description='Analyze metrics for anomalies.')
+    parser.add_argument("-r", "--redis", default="redis://localhost:6379/", help="Redis instance to connect to")
     parser.add_argument("--enable-second-order", action="store_true", default=False, help="This is to enable second order anomalies. (EXPERIMENTAL)")
     parser.add_argument("-c", "--consensus", type=int, default=6, help="The number of algorithms that must return True before a metric is classified as anomalous")
     parser.add_argument("--full-duration", type=int, default=86400, help="The length of a full timeseries length")

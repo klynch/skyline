@@ -137,8 +137,8 @@ class RedisAnalyzer(Analyzer):
         super(RedisAnalyzer, self).__init__(*args, **kwargs)
 
         #We should not need to reconnect
-        log.msg("RedisPublisher connecting to redis: {0}".format(settings.REDIS_OPTS))
-        self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
+        log.msg("RedisPublisher connecting to redis: {0}".format(self.args.redis))
+        self.redis_conn = StrictRedis.from_url(self.args.redis)
         self.pipe = self.redis_conn.pipeline()
 
     def waitfor_connection(self):

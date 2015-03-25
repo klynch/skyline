@@ -2,12 +2,6 @@
 Shared settings
 """
 
-# The options for Redis
-REDIS_OPTS = {
-  'host': 'localhost',
-  'port': 6379,
-}
-
 # If you have a Graphite host set up, set this metric to get graphs on
 # Skyline and Horizon. Don't include http:// since this is used for carbon host as well.
 GRAPHITE_HOST = 'your_graphite_host.com'

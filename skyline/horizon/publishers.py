@@ -4,7 +4,6 @@ from redis import StrictRedis
 from cache import MetricCache
 from twisted.python import log
 from msgpack import packb
-import settings
 from twisted.internet import reactor
 
 #1. check if in skip list (record blacklist + whitelist hits)
@@ -35,8 +34,8 @@ class RedisPublisher(Publisher):
         super(RedisPublisher, self).__init__(*args, **kwargs)
 
         #We should not need to reconnect
-        log.msg("RedisPublisher connecting to redis: {0}".format(settings.REDIS_OPTS))
-        self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
+        log.msg("RedisPublisher connecting to redis: {0}".format(self.args.redis))
+        self.redis_conn = StrictRedis.from_url(self.args.redis)
         self.pipe = self.redis_conn.pipeline()
 
 

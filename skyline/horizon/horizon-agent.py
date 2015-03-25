@@ -7,16 +7,13 @@ from twisted.internet import reactor
 from protocols import *
 from publishers import publish_forever, RedisPublisher
 
-# add the shared settings file to namespace
-sys.path.insert(0, dirname(dirname(abspath(__file__))))
-import settings
-
 
 if __name__ == "__main__":
     """
     Start the Horizon agent.
     """
     parser = argparse.ArgumentParser(description='Process graphite metrics.')
+    parser.add_argument("-r", "--redis", default="redis://localhost:6379/", help="Redis instance to connect to")
     parser.add_argument("--max-resolution", type=int, default=1000, help="The Horizon agent will ignore incoming datapoints if their timestamp is older than MAX_RESOLUTION seconds ago.")
     parser.add_argument("-i", "--interface", default="", help="Horizon process name")
     parser.add_argument("-l", "--line-port", type=int, default=0, help="Listen for graphite line data (e.g. 2023)")

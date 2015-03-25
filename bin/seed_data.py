@@ -14,14 +14,6 @@ from struct import Struct, pack
 import redis
 import msgpack
 
-# Get the current working directory of this file.
-# http://stackoverflow.com/a/4060259/120999
-__location__ = realpath(join(os.getcwd(), dirname(__file__)))
-
-# Add the shared settings file to namespace.
-sys.path.insert(0, join(__location__, '..', 'src'))
-import settings
-
 
 class NoDataException(Exception):
     pass
@@ -61,6 +53,7 @@ def seed_udp(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Seed data.')
+    parser.add_argument("-r", "--redis", default="redis://localhost:6379/", help="Redis instance to connect to")
     parser.add_argument("-d", "--data", required=True, help="seed data file")
     parser.add_argument("--max-resolution", type=int, default=1000, help="The Horizon agent will ignore incoming datapoints if their timestamp is older than MAX_RESOLUTION seconds ago.")
     parser.add_argument("-l", "--line-port", type=int, default=0, help="Listen for graphite line data (e.g. 2023)")
@@ -74,7 +67,7 @@ if __name__ == "__main__":
         metrics.append(seed_udp(args))
 
     print "Connecting to Redis..."
-    r = redis.StrictRedis(**settings.REDIS_OPTS)
+    r = redis.StrictRedis.from_url(args.redis)
 
     try:
         members = r.smembers("skyline:metricset:all")
