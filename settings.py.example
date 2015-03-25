@@ -81,18 +81,6 @@ SYSLOG_OPTS = {
 """
 Horizon settings
 """
-# This is the number of Roomba processes that will be spawned to trim
-# timeseries in order to keep them at FULL_DURATION. Keep this number small,
-# as it is not important that metrics be exactly FULL_DURATION *all* the time.
-ROOMBA_PROCESSES = 1
-
-# Normally Roomba will clean up everything that is older than FULL_DURATION
-# if you have metrics that are not coming in every second, it can happen
-# that you'll end up with INCOMPLETE metrics.
-# With this setting Roomba will clean up evertyhing that is older than
-# FULL_DURATION + ROOMBA_GRACE_TIME
-ROOMBA_GRACE_TIME = 600
-
 # These are metrics that, for whatever reason, you do not want to store in Skyline. Each entry in the blacklist and
 # whitelist is a regex, which behaves much like the graphite/carbon RegexList. The Listener will check to see if each
 # incoming metric is not in the blacklist and in the whitelist. If a list is empty, all entries will pass through it.

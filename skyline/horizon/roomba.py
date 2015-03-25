@@ -11,6 +11,18 @@ import settings
 
 logger = logging.getLogger("HorizonLog")
 
+# This is the number of Roomba processes that will be spawned to trim
+# timeseries in order to keep them at FULL_DURATION. Keep this number small,
+# as it is not important that metrics be exactly FULL_DURATION *all* the time.
+ROOMBA_PROCESSES = 1
+
+# Normally Roomba will clean up everything that is older than FULL_DURATION
+# if you have metrics that are not coming in every second, it can happen
+# that you'll end up with INCOMPLETE metrics.
+# With this setting Roomba will clean up evertyhing that is older than
+# FULL_DURATION + ROOMBA_GRACE_TIME
+ROOMBA_GRACE_TIME = 600
+
 
 class Roomba(Thread):
     """
