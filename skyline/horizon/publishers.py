@@ -22,12 +22,18 @@ def publish_forever(publisher):
     time.sleep(1)
 
 
-class Publisher:
-    pass
+class Publisher(object):
+    def __init__(self, arguments, *args, **kwargs):
+        self.args = arguments
 
 
 class RedisPublisher(Publisher):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the Publisher
+        """
+        super(RedisPublisher, self).__init__(*args, **kwargs)
+
         #We should not need to reconnect
         log.msg("RedisPublisher connecting to redis: {0}".format(settings.REDIS_OPTS))
         self.redis_conn = StrictRedis(**settings.REDIS_OPTS)
@@ -65,7 +71,7 @@ class RedisPublisher(Publisher):
     def publishCachedData(self):
         "Write datapoints until the MetricCache is completely empty"
 
-        max_age = time.time() - settings.MAX_RESOLUTION
+        max_age = time.time() - self.args.max_resolution
 
         while MetricCache:
             dataWritten = False

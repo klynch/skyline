@@ -27,32 +27,15 @@ class NoDataException(Exception):
     pass
 
 
-def seed_msgpack():
-    print 'Loading data over UDP via Horizon...'
-    metric = 'horizon.test.msgpack'
-    initial = int(time.time()) - settings.MAX_RESOLUTION
-
-    with open(join(__location__, 'data.json'), 'r') as f:
-        data = json.loads(f.read())
-        series = data['results']
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-        for datapoint in series:
-            datapoint[0] = initial
-            initial += 1
-            packet = msgpack.packb((metric, datapoint))
-            sock.sendto(packet, (socket.gethostname(), settings.UDP_PORT))
-
-
-def seed_line(datafile):
+def seed_line(args):
     print 'Loading data over line via Horizon...'
     metric = 'horizon.test.line'
-    initial = int(time.time()) - settings.MAX_RESOLUTION
-    with open(datafile, 'r') as f:
+    initial = int(time.time()) - args.max_resolution
+    with open(args.data, 'r') as f:
         data = json.loads(f.read())
         series = data['results']
         sock = socket.socket()
-        sock.connect(("localhost", 2023))
+        sock.connect(("localhost", args.line_port))
         for datapoint in series:
             datapoint[0] = initial
             initial += 1
@@ -61,30 +44,34 @@ def seed_line(datafile):
     return metric
 
 
-def seed_udp(datafile):
+def seed_udp(args):
     print 'Loading data over udp via Horizon...'
     metric = 'horizon.test.udp'
-    initial = int(time.time()) - settings.MAX_RESOLUTION
-    with open(datafile, 'r') as f:
+    initial = int(time.time()) - args.max_resolution
+    with open(args.data, 'r') as f:
         data = json.loads(f.read())
         series = data['results']
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         for datapoint in series:
             datapoint[0] = initial
             initial += 1
-            sock.sendto("{0} {1} {2}\n".format(metric, datapoint[1], datapoint[0]), ("localhost", 2025))
+            sock.sendto("{0} {1} {2}\n".format(metric, datapoint[1], datapoint[0]), ("localhost", args.udp_port))
     return metric
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Seed data.')
     parser.add_argument("-d", "--data", required=True, help="seed data file")
+    parser.add_argument("--max-resolution", type=int, default=1000, help="The Horizon agent will ignore incoming datapoints if their timestamp is older than MAX_RESOLUTION seconds ago.")
+    parser.add_argument("-l", "--line-port", type=int, default=0, help="Listen for graphite line data (e.g. 2023)")
+    parser.add_argument("-u", "--udp-port", type=int, default=0, help="Listen for graphite udp data (e.g. 2025)")
     args = parser.parse_args()
 
-    metrics = [
-        seed_line(args.data),
-        seed_udp(args.data),
-    ]
+    metrics = []
+    if args.line_port:
+        metrics.append(seed_line(args))
+    if args.udp_port:
+        metrics.append(seed_udp(args))
 
     print "Connecting to Redis..."
     r = redis.StrictRedis(**settings.REDIS_OPTS)
