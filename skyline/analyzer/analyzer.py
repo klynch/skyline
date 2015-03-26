@@ -5,7 +5,7 @@ import logging
 import traceback
 import msgpack
 import re
-import settings
+import json
 import time
 import alerts
 import algorithms
@@ -21,11 +21,6 @@ class Stale(Exception):
 
 class Boring(Exception):
     pass
-
-
-def trigger_alert(alert, metric):
-    target = getattr(alerters, 'alert_{0}'.format(alert[1]))
-    target(alert, metric)
 
 
 def analyze_forever(analyzer):
@@ -45,22 +40,25 @@ def emit(metric, value):
 class Analyzer(object):
     def __init__(self, arguments, *args, **kwargs):
         self.args = arguments
+        self.alerts_rules = []
+        self.alerts_settings = {}
 
     def run(self):
         print "analyzing!"
 
-    def alert(self, metric, results):
-        log.msg("alert: " + metric)
-        return True
-        for alert in settings.ALERTS:
-            if re.compile(alert[0]).match(metric):
+    def alert(self, metric, datapoint, ensemble):
+        for pattern, strategy, timeout, args in self.alerts_rules:
+            if re.compile(pattern).match(metric):
                 try:
-                    key = 'skyline:alert:{}:{}'.format(alert[1], metric)
+                    #Set the key with an expiration if it does not exist
+                    key = 'skyline:alert:{}:{}'.format(strategy, metric)
                     if not self.redis_conn.exists(key):
-                        self.redis_conn.setex(key, alert[2], time.now())
-                        trigger_alert(alert, metric)
+                        self.redis_conn.setex(key, timeout, time.now())
+                        target = getattr(alerts, 'alert_{0}'.format(strategy))
+                        settings = self.alerts_settings.get(strategy, {})
+                        target(metric, datapoint, ensemble, args, settings)
                 except Exception as e:
-                    log.err("could not send alert {} for metric {}: {}".format(alert, metric, e))
+                    log.err("could not send alert {} for metric {}: {}".format(strategy, metric, e))
 
     def is_anomalous(self, timeseries, metric_name):
         """
@@ -139,7 +137,17 @@ class RedisAnalyzer(Analyzer):
         #We should not need to reconnect
         log.msg("RedisPublisher connecting to redis: {0}".format(self.args.redis))
         self.redis_conn = StrictRedis.from_url(self.args.redis)
-        self.pipe = self.redis_conn.pipeline()
+
+        #Parse the alerts rules
+        alerts_rules = self.redis_conn.get('skyline:alerts:rules')
+        if alerts_rules:
+            self.alerts_rules = json.loads(alerts_rules)
+
+        #Parse the alerts settings
+        alerts_settings = self.redis_conn.get('skyline:alerts:settings')
+        if alerts_settings:
+            self.alerts_settings = json.loads(alerts_settings)
+
 
     def waitfor_connection(self):
         while reactor.running:
@@ -208,7 +216,7 @@ class RedisAnalyzer(Analyzer):
                 # Send out alerts
                 if anomalous:
                     emit("skyline.analyzer.metric.anomalous", metric)
-                    self.alert(metric, ensemble)
+                    self.alert(metric, datapoint, ensemble)
                 else:
                     emit("skyline.analyzer.metric.ok", metric)
 
