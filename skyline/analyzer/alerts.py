@@ -4,6 +4,7 @@ from email.MIMEImage import MIMEImage
 from smtplib import SMTP
 
 import logging
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("skyline.analyzer.alerts")
 
 
@@ -60,11 +61,11 @@ def alert_hipchat(metric, datapoint, ensemble, args, settings):
                                                                   'message': 'Anomalous metric: {0} (datapoint: {1})<br><a href="{2}"><img src="{2}"/></a>'.format(metric, datapoint, link)})
 
 
-def alert_stdout(metric, datapoint, ensemble, args):
-    logger.info("metric={0} datapoint={1}".format(metric, datapoint))
+def alert_stdout(metric, datapoint, ensemble, args, settings):
+    logger.warning("metric={0} datapoint={1}".format(metric, datapoint))
 
 
-def alert_syslog(metric, datapoint, ensemble, args):
+def alert_syslog(metric, datapoint, ensemble, args, settings):
     import syslog
     syslog.openlog("skyline", syslog.LOG_PID, syslog.LOG_LOCAL4)
     syslog.syslog(syslog.LOG_LOCAL4, str("metric={0} datapoint={1}".format(metric, datapoint)))
