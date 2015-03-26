@@ -78,8 +78,39 @@ This will ensure that the Horizon
 service is properly set up and can receive data. For real data, you have some
 options - see [wiki](https://github.com/etsy/skyline/wiki/Getting-Data-Into-Skyline)
 
-Once you get real data flowing through your system, the Analyzer will be able
-start analyzing for anomalies!  But be aware, analyzer it will only start to really analyzing timeseries when redis has `FULL_DURATION` (e.g. 86400 seconds) worth of data, otherwise it is too short aka less than `MIN_TOLERABLE_LENGTH`.
+Once you get real data flowing through your system, the Analyzer will be able start analyzing for anomalies!  But be
+aware, analyzer it will only start to really analyzing timeseries when redis has `FULL_DURATION` (e.g. 86400 seconds)
+worth of data, otherwise it is too short aka less than `MIN_TOLERABLE_LENGTH`.
+
+### Metric Filtering
+
+A BlackList and a WhiteList is used to filter out unwanted metrics similar to the filters in graphite. Many metrics,
+especially aggregate metrics, do not convey any additional information and result in unnecessary load on the
+system. Each entry in the blacklist and whitelist is a regex, which behaves much like the graphite/carbon RegexList. The
+Listener will check to see if each # incoming metric is not in the blacklist and in the whitelist. If a list is empty,
+all entries will pass through it.
+
+Metrics are rejected if `skyline:config:blacklist` is defined in Redis and non-empty, and the metric matches at least 1
+of the regular expression patterns in that list. To reject all metrics the pattern `.*` can be used.
+
+Metrics are rejected if `skyline:config:whitelist` is defined in Redis and non-empty, and the metric does not match at
+least 1 of the regular expression patterns in that list. To accept all metrics the pattern `.*` can be used, or the list
+can be empty.
+
+    BLACKLIST = [
+        "^skyline\."
+        "^example\.statsd\.metric$",
+        "^another\.example\..*",
+        "_90$",
+        "\.lower$",
+        "\.upper$",
+        "\.median$",
+        "\.count_ps$",
+        "\.sum$",
+    ]
+
+    WHITELIST = []
+
 
 ### Alerts
 

@@ -12,24 +12,3 @@ GRAPH_URL = 'http://' + GRAPHITE_HOST + '/render/?width=1400&from=-1hour&target=
 
 # If you have a Graphite host set up, set its Carbon port.
 CARBON_PORT = 2003
-
-"""
-Horizon settings
-"""
-# These are metrics that, for whatever reason, you do not want to store in Skyline. Each entry in the blacklist and
-# whitelist is a regex, which behaves much like the graphite/carbon RegexList. The Listener will check to see if each
-# incoming metric is not in the blacklist and in the whitelist. If a list is empty, all entries will pass through it.
-BLACKLIST = [
-    '^skyline\.'
-    '^example\.statsd\.metric$',
-    '^another\.example\..*',
-    # if you use statsd, these can result in many near-equal series
-    #'_90$',
-    #'\.lower$',
-    #'\.upper$',
-    #'\.median$',
-    #'\.count_ps$',
-    #'\.sum$',
-]
-
-WHITELIST = []

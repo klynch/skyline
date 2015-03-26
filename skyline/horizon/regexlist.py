@@ -1,10 +1,12 @@
 import re
-import settings
 
 class RegexList:
   """ Maintain a list of regex for matching"""
 
-  def __init__(self, regex_list):
+  def __init__(self):
+    self.regex_list = []
+
+  def load(self, regex_list):
     self.regex_list = map(lambda r: re.compile(r), regex_list)
 
   def __contains__(self, value):
@@ -16,5 +18,5 @@ class RegexList:
   def __nonzero__(self):
     return bool(self.regex_list)
 
-WhiteList = RegexList(settings.WHITELIST)
-BlackList = RegexList(settings.BLACKLIST)
+WhiteList = RegexList()
+BlackList = RegexList()

@@ -1,5 +1,6 @@
 import os
 import time
+import json
 from redis import StrictRedis
 from cache import MetricCache
 from twisted.python import log
@@ -10,6 +11,7 @@ from twisted.internet import reactor
 #2. check if stale data (record number of stale metrics)
 #3. record to redis
 
+from regexlist import BlackList, WhiteList
 
 def publish_forever(publisher):
   while reactor.running:
@@ -37,6 +39,8 @@ class RedisPublisher(Publisher):
         log.msg("RedisPublisher connecting to redis: {0}".format(self.args.redis))
         self.redis_conn = StrictRedis.from_url(self.args.redis)
         self.pipe = self.redis_conn.pipeline()
+        BlackList.load(json.loads(self.redis_conn.get("skyline:config:blacklist")))
+        WhiteList.load(json.loads(self.redis_conn.get("skyline:config:whitelist")))
 
 
     def waitfor_connection(self):

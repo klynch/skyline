@@ -1,0 +1,23 @@
+{
+  "skyline:config:alerts:rules": [
+    [
+      ".*", 
+      "stdout", 
+      1800, 
+      {}
+    ]
+  ], 
+  "skyline:config:blacklist": [
+    "^skyline\\.", 
+    "^example\\.statsd\\.metric$", 
+    "^another\\.example\\..*", 
+    "_90$", 
+    "\\.lower$", 
+    "\\.upper$", 
+    "\\.median$", 
+    "\\.count_ps$", 
+    "\\.sum$"
+  ], 
+  "skyline:config:alerts:settings": {}, 
+  "skyline:config:whitelist": []
+}
