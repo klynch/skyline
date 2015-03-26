@@ -44,7 +44,7 @@ class Analyzer(object):
         self.alerts_settings = {}
 
     def run(self):
-        print "analyzing!"
+        pass
 
     def alert(self, metric, datapoint, ensemble):
         for pattern, strategy, timeout, args in self.alerts_rules:
