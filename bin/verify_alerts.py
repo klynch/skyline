@@ -1,44 +1,37 @@
 #!/usr/bin/env python
 
-import os
-import sys
-from os.path import dirname, join, realpath
-from optparse import OptionParser
+import argparse
+import json
+import redis
+import time
+from skyline.analyzer.analyzer import RedisAnalyzer
 
-# Get the current working directory of this file.
-# http://stackoverflow.com/a/4060259/120999
-__location__ = realpath(join(os.getcwd(), dirname(__file__)))
+parser = argparse.ArgumentParser(description='Analyze metrics for anomalies.')
+parser.add_argument("-r", "--redis", default="redis://localhost:6379/", help="Redis instance to connect to")
+parser.add_argument("-m", "--metric", default='skyline.horizon.queue_size', help="Pass the metric to test")
+parser.add_argument("-t", "--trigger", action='store_true', help="Actually trigger the appropriate alerts")
+args = parser.parse_args()
 
-# Add the shared settings file to namespace.
-sys.path.insert(0, join(__location__, '..', 'src'))
-import settings
+print "Verifying alerts for: {}".format(args.metric)
 
-# Add the analyzer file to namespace.
-sys.path.insert(0, join(__location__, '..', 'src', 'analyzer'))
-from alerters import trigger_alert
+redis_conn = redis.StrictRedis.from_url(args.redis)
 
-parser = OptionParser()
-parser.add_option("-t", "--trigger", dest="trigger", default=False,
-                  help="Actually trigger the appropriate alerts (default is False)")
+#Check the rules
+rules = redis_conn.get("skyline:alerts:rules")
+if rules:
+    rules = json.loads(rules)
+else:
+    rules = []
+print "rules: {}".format(rules)
 
-parser.add_option("-m", "--metric", dest="metric", default='skyline.horizon.queue_size',
-                  help="Pass the metric to test (default is skyline.horizon.queue_size)")
+#Check the settings
+settings = redis_conn.get("skyline:alerts:settings")
+if settings:
+    settings = json.loads(settings)
+else:
+    settings = {}
+print "settings: {}".format(settings)
 
-(options, args) = parser.parse_args()
-
-try:
-    alerts = settings.ALERTS
-except:
-    print "Exception: Check your settings file for the existence of ENABLE_ALERTS and ALERTS"
-    sys.exit()
-
-print 'Verifying alerts for: "' + options.metric + '"'
-
-# Send alerts
-for alert in alerts:
-    if alert[0] in options.metric:
-        print '    Testing against "' + alert[0] + '" to send via ' + alert[1] + "...triggered"
-        if options.trigger:
-            trigger_alert(alert, options.metric)
-    else:
-        print '    Testing against "' + alert[0] + '" to send via ' + alert[1] + "..."
+a = RedisAnalyzer(args)
+for t in a.alert(args.metric, (time.time(), 0), {}, check=True, trigger=args.trigger):
+    print t

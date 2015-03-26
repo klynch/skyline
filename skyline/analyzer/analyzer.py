@@ -46,19 +46,25 @@ class Analyzer(object):
     def run(self):
         pass
 
-    def alert(self, metric, datapoint, ensemble):
+    def alert(self, metric, datapoint, ensemble, check=False, trigger=True):
+        triggers = []
         for pattern, strategy, timeout, args in self.alerts_rules:
             if re.compile(pattern).match(metric):
                 try:
                     #Set the key with an expiration if it does not exist
                     key = 'skyline:alert:{}:{}'.format(strategy, metric)
-                    if not self.redis_conn.exists(key):
-                        self.redis_conn.setex(key, timeout, time.now())
+                    if not self.redis_conn.exists(key) or check:
+                        if not check:
+                            self.redis_conn.setex(key, timeout, time.now())
                         target = getattr(alerts, 'alert_{0}'.format(strategy))
                         settings = self.alerts_settings.get(strategy, {})
-                        target(metric, datapoint, ensemble, args, settings)
+                        if trigger:
+                            target(metric, datapoint, ensemble, args, settings)
+                        else:
+                            triggers.append((strategy, pattern, metric, datapoint, ensemble, args, settings))
                 except Exception as e:
                     log.err("could not send alert {} for metric {}: {}".format(strategy, metric, e))
+        return triggers
 
     def is_anomalous(self, timeseries, metric_name):
         """
@@ -216,7 +222,7 @@ class RedisAnalyzer(Analyzer):
                 # Send out alerts
                 if anomalous:
                     emit("skyline.analyzer.metric.anomalous", metric)
-                    self.alert(metric, datapoint, ensemble)
+                    return self.alert(metric, datapoint, ensemble)
                 else:
                     emit("skyline.analyzer.metric.ok", metric)
 
