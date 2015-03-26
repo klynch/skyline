@@ -145,12 +145,12 @@ class RedisAnalyzer(Analyzer):
         self.redis_conn = StrictRedis.from_url(self.args.redis)
 
         #Parse the alerts rules
-        alerts_rules = self.redis_conn.get('skyline:alerts:rules')
+        alerts_rules = self.redis_conn.get('skyline:config:alerts:rules')
         if alerts_rules:
             self.alerts_rules = json.loads(alerts_rules)
 
         #Parse the alerts settings
-        alerts_settings = self.redis_conn.get('skyline:alerts:settings')
+        alerts_settings = self.redis_conn.get('skyline:config:alerts:settings')
         if alerts_settings:
             self.alerts_settings = json.loads(alerts_settings)
 

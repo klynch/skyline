@@ -93,8 +93,8 @@ requirements.txt file.  If using syslog then the `EXPIRATION_TIME` should be set
 catching every anomaly, e.g.  `("stats", "syslog", 1)`
 
 This is the config for which metrics to alert on and which strategy to use for each.  Alerts will not fire twice within
-`timeout` period, even if they trigger again.  This is stored as JSON data in the Redis key `skyline:alerts:rules` with the
-following schema:
+`timeout` period, even if they trigger again.  This is stored as JSON data in the Redis key
+`skyline:config:alerts:rules` with the following schema:
 
     Schema: [
                [pattern, strategy, timeout, arguments],
@@ -111,7 +111,7 @@ alert/metric pair is quiet for, and arguments is an alert specific dictionary.
     ]
 
 
-General alert settings are stored as a JSON blob in the Redis key `skyline:alerts:settings`.
+General alert settings are stored as a JSON blob in the Redis key `skyline:config:alerts:settings`.
 
     ALERT_SETTINGS = {
         #This specifies the mailserver to connect to. If user or password are blank no authentication is used.

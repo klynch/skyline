@@ -17,7 +17,7 @@ print "Verifying alerts for: {}".format(args.metric)
 redis_conn = redis.StrictRedis.from_url(args.redis)
 
 #Check the rules
-rules = redis_conn.get("skyline:alerts:rules")
+rules = redis_conn.get("skyline:config:alerts:rules")
 if rules:
     rules = json.loads(rules)
 else:
@@ -25,7 +25,7 @@ else:
 print "rules: {}".format(rules)
 
 #Check the settings
-settings = redis_conn.get("skyline:alerts:settings")
+settings = redis_conn.get("skyline:config:alerts:settings")
 if settings:
     settings = json.loads(settings)
 else:
