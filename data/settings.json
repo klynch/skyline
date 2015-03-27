@@ -1,23 +1,28 @@
 {
   "skyline:config:alerts:rules": [
     [
-      ".*", 
-      "stdout", 
-      1800, 
+      ".*",
+      "stdout",
+      1800,
       {}
     ]
-  ], 
+  ],
+  "skyline:config:alerts:settings": {},
   "skyline:config:blacklist": [
-    "^skyline\\.", 
-    "^example\\.statsd\\.metric$", 
-    "^another\\.example\\..*", 
-    "_90$", 
-    "\\.lower$", 
-    "\\.upper$", 
-    "\\.median$", 
-    "\\.count_ps$", 
+    "^skyline\\.",
+    "^example\\.statsd\\.metric$",
+    "^another\\.example\\..*",
+    "_90$",
+    "\\.lower$",
+    "\\.upper$",
+    "\\.median$",
+    "\\.count_ps$",
     "\\.sum$"
-  ], 
-  "skyline:config:alerts:settings": {}, 
+  ],
+  "skyline:config:graphite": {
+    "host": "graphite.squarespace.net",
+    "port": 2003,
+    "url": "http://graphite.squarespace.net/render/?width=1400&from=-1hour&target=%s"
+  },
   "skyline:config:whitelist": []
 }

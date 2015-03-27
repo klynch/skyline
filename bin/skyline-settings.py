@@ -9,6 +9,7 @@ DEFAULT_SETTINGS = [
     ("skyline:config:alerts:settings", {}),
     ("skyline:config:blacklist", []),
     ("skyline:config:whitelist", []),
+    ("skyline:config:graphite", {}),
 ]
 
 if __name__ == "__main__":
@@ -37,4 +38,4 @@ if __name__ == "__main__":
         if value is not None:
             settings[key] = json.loads(value)
 
-    print json.dumps(settings, indent=2)
+    print json.dumps(settings, indent=2, sort_keys=True)

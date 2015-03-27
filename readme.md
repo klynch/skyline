@@ -170,6 +170,22 @@ General alert settings are stored as a JSON blob in the Redis key `skyline:confi
     }
 
 
+### Graphite
+
+To send Skyline metric data back into Graphite, or to link to Graphite (or another graphite dashboard) graphs directly,
+set the `skyline:config:graphite` key with the following JSON data in Redis:
+
+     {
+          "host": "graphite.squarespace.net",
+		  "port": 2003,
+		  "url": "http://graphite.squarespace.net/render/?width=1400&from=-1hour&target=%s"
+     }
+
+
+The `host` and `port` fields will be used to for live metrics to Graphite. The `url` field will be used for image links
+where `%s` will be replaced by the metric name.
+
+
 ### How do you actually detect anomalies?
 An ensemble of algorithms vote. Majority rules. Batteries __kind of__ included.
 See [wiki](https://github.com/etsy/skyline/wiki/Analyzer)
