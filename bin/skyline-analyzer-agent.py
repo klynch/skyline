@@ -2,29 +2,12 @@
 
 import argparse
 import sys
-import traceback
-import time
 
 from twisted.python import log
 from twisted.internet import reactor
 
-from skyline.analyzer.analyzer import analyze_forever, Analyzer, RedisAnalyzer
-from skyline.analyzer.algorithms import *
-
-def check_algorithms(args):
-    # Make sure we can run all the algorithms
-    try:
-        log.msg("checking algorithms...")
-        timeseries = map(list, zip(map(float, range(int(time.time()) - 86400, int(time.time()) + 1)), xrange(86401)))
-        ensemble = Analyzer(args).is_anomalous(timeseries, "dummy")
-        log.msg("passed.")
-    except KeyError as e:
-        log.msg("Algorithm {} deprecated or not defined".format(e))
-        sys.exit(1)
-    except Exception as e:
-        log.msg("Algorithm test run failed.")
-        traceback.print_exc()
-        sys.exit(1)
+from skyline.analyzer.analyzer import analyze_forever, RedisAnalyzer
+from skyline.analyzer import check_algorithms
 
 if __name__ == "__main__":
     """
