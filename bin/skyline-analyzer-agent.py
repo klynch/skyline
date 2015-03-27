@@ -1,15 +1,15 @@
+#!/usr/bin/env python
+
 import argparse
 import sys
 import traceback
-from os.path import dirname, abspath, isdir
 import time
 
 from twisted.python import log
 from twisted.internet import reactor
 
-from analyzer import analyze_forever, Analyzer, RedisAnalyzer
-
-from algorithms import *
+from skyline.analyzer.analyzer import analyze_forever, Analyzer, RedisAnalyzer
+from skyline.analyzer.algorithms import *
 
 def check_algorithms(args):
     # Make sure we can run all the algorithms

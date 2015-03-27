@@ -1,11 +1,11 @@
+#!/usr/bin/env python
+
 import argparse
 import sys
-from os.path import dirname, abspath, isdir
-
 from twisted.python import log
 from twisted.internet import reactor
-from protocols import *
-from publishers import publish_forever, RedisPublisher
+from skyline.horizon.protocols import *
+from skyline.horizon.publishers import publish_forever, RedisPublisher
 
 
 if __name__ == "__main__":
