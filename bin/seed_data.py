@@ -78,15 +78,14 @@ if __name__ == "__main__":
                 print "Missing metric in set: {0}".format(metric)
                 raise NoDataException
 
-        d = r.get("skyline:metric:{0}:data".format(metric))
-        if d is None:
-            raise NoDataException
+            d = r.get("skyline:metric:{0}:data".format(metric))
+            if d is None:
+                raise NoDataException
 
-        h = r.hgetall("skyline:metric:{0}:info".format(metric))
-        if h is None:
-            raise NoDataException
+            h = r.hgetall("skyline:metric:{0}:info".format(metric))
+            if h is None:
+                raise NoDataException
 
         print "Congratulations! The data made it in. The Horizon pipeline seems to be working."
-
     except NoDataException:
         print "Woops, looks like the metrics didn't make it into Horizon. Try again?"
