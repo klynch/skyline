@@ -55,7 +55,7 @@ class Analyzer(object):
                     key = 'skyline:alert:{}:{}'.format(strategy, metric)
                     if not self.redis_conn.exists(key) or check:
                         if not check:
-                            self.redis_conn.setex(key, timeout, time.now())
+                            self.redis_conn.setex(key, timeout, time.time())
                         target = getattr(alerts, 'alert_{0}'.format(strategy))
                         settings = self.alerts_settings.get(strategy, {})
                         if trigger:
