@@ -2,17 +2,9 @@
 
 import argparse
 import json
-import os
-import pickle
-import socket
-import sys
-import time
-from os.path import dirname, join, realpath
-from multiprocessing import Manager, Process, log_to_stderr
-from struct import Struct, pack
-
 import redis
-import msgpack
+import socket
+import time
 
 
 class NoDataException(Exception):
