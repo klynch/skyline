@@ -63,11 +63,11 @@ class RedisPublisher(Publisher):
 
         #Update some metadata
         info_key = "skyline:metric:{0}:info".format(metric)
-        self.pipe.hincrby(info_key, 'length', len(list(datapoints)))
-        self.pipe.hset(info_key, 'updated_at', time.time())
+        self.pipe.hincrby(info_key, "length", len(datapoints))
+        self.pipe.hset(info_key, "last_updated_at", time.time())
 
-        self.pipe.sadd('skyline:metricset:updated', metric) #Key where the set of recently updated metrics is stored
-        self.pipe.sadd('skyline:metricset:all', metric) #Key where the set of all known metrics is stored
+        self.pipe.sadd("skyline:metricset:updated", metric) #Key where the set of recently updated metrics is stored
+        self.pipe.sadd("skyline:metricset:all", metric) #Key where the set of all known metrics is stored
         self.pipe.execute()
 
 
