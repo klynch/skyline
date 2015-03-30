@@ -62,12 +62,16 @@ else:
 ##//SafeUnpickler
 
 
+
+
 def send_graphite_metric(graphite_host, graphite_port, name, value):
     if graphite:
-        sock = socket.socket()
-        sock.connect((graphite_host, graphite_port))
-        sock.sendall('%s %s %i\n' % (name, value, time.time()))
-        sock.close()
-        return True
-
+        try:
+          sock = socket.socket()
+          sock.connect((settings.GRAPHITE_HOST, settings.CARBON_PORT))
+          sock.sendall('%s %s %i\n' % (name, value, time.time()))
+          sock.close()
+          return True
+        except socket.error:
+          logger.error("Can't connect to Graphite at {}:{}".format(graphite_host, graphite_port))
     return False
