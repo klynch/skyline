@@ -1,23 +1,20 @@
 import unittest2 as unittest
 from mock import Mock, patch
+from argparse import Namespace
 from time import time
 
 import sys
 from os.path import dirname, abspath
 
-sys.path.insert(0, dirname(dirname(abspath(__file__))) + '/src')
-sys.path.insert(0, dirname(dirname(abspath(__file__))) + '/src/analyzer')
-
-import algorithms
-import settings
-
+from skyline.analyzer import algorithms
+from skyline.analyzer.analyzer import Analyzer
 
 class TestAlgorithms(unittest.TestCase):
     """
     Test all algorithms with a common, simple/known anomalous data set
     """
 
-    def _addSkip(self, test, reason):
+    def _addSkip(self, result, test, reason):
         print reason
 
     def data(self, ts):
@@ -32,52 +29,54 @@ class TestAlgorithms(unittest.TestCase):
 
     def test_tail_avg(self):
         _, timeseries = self.data(time())
-        self.assertEqual(algorithms.tail_avg(timeseries), 334)
+        self.assertEqual(algorithms.tail_avg(timeseries, Namespace()), 334)
 
     def test_grubbs(self):
         _, timeseries = self.data(time())
-        self.assertTrue(algorithms.grubbs(timeseries))
+        self.assertTrue(algorithms.grubbs(timeseries, Namespace()))
 
-    @patch.object(algorithms, 'time')
+    @patch.object(algorithms.time, 'time')
     def test_first_hour_average(self, timeMock):
         timeMock.return_value, timeseries = self.data(time())
-        self.assertTrue(algorithms.first_hour_average(timeseries))
+        self.assertTrue(algorithms.first_hour_average(timeseries, Namespace(full_duration=86400)))
 
     def test_stddev_from_average(self):
         _, timeseries = self.data(time())
-        self.assertTrue(algorithms.stddev_from_average(timeseries))
+        self.assertTrue(algorithms.stddev_from_average(timeseries, Namespace()))
 
     def test_stddev_from_moving_average(self):
         _, timeseries = self.data(time())
-        self.assertTrue(algorithms.stddev_from_moving_average(timeseries))
+        self.assertTrue(algorithms.stddev_from_moving_average(timeseries, Namespace()))
 
     def test_mean_subtraction_cumulation(self):
         _, timeseries = self.data(time())
-        self.assertTrue(algorithms.mean_subtraction_cumulation(timeseries))
+        self.assertTrue(algorithms.mean_subtraction_cumulation(timeseries, Namespace()))
 
-    @patch.object(algorithms, 'time')
+    @patch.object(algorithms.time, 'time')
     def test_least_squares(self, timeMock):
         timeMock.return_value, timeseries = self.data(time())
-        self.assertTrue(algorithms.least_squares(timeseries))
+        self.assertTrue(algorithms.least_squares(timeseries, Namespace()))
 
     def test_histogram_bins(self):
         _, timeseries = self.data(time())
-        self.assertTrue(algorithms.histogram_bins(timeseries))
+        self.assertTrue(algorithms.histogram_bins(timeseries, Namespace()))
 
-    @patch.object(algorithms, 'time')
+    @patch.object(algorithms.time, 'time')
     def test_run_selected_algorithm(self, timeMock):
         timeMock.return_value, timeseries = self.data(time())
-        result, ensemble, datapoint = algorithms.run_selected_algorithm(timeseries, "test.metric")
+        args = Namespace(min_tolerable_length=1, stale_period=500, max_tolerable_boredom=100, boredom_set_size=1, full_duration=86400, consensus=6)
+        result, ensemble, datapoint = Analyzer(args).is_anomalous(timeseries, "test.metric")
+        #algorithms.run_selected_algorithm(timeseries, "test.metric")
         self.assertTrue(result)
-        self.assertTrue(len(filter(None, ensemble)) >= settings.CONSENSUS)
-        self.assertEqual(datapoint, 1000)
+        self.assertTrue(len(filter(None, ensemble)) >= 4)
+        self.assertTrue(isinstance(datapoint, list))
+        self.assertEqual(datapoint[1], 1000)
 
-    @unittest.skip('Fails inexplicable in certain environments.')
-    @patch.object(algorithms, 'CONSENSUS')
+    #@unittest.skip('Fails inexplicable in certain environments.')
     @patch.object(algorithms, 'ALGORITHMS')
-    @patch.object(algorithms, 'time')
+    @patch.object(algorithms.time, 'time')
     def test_run_selected_algorithm_runs_novel_algorithm(self, timeMock,
-                                                         algorithmsListMock, consensusMock):
+                                                         algorithmsListMock):
         """
         Assert that a user can add their own custom algorithm.
 
@@ -89,13 +88,15 @@ class TestAlgorithms(unittest.TestCase):
         timeMock.return_value, timeseries = self.data(time())
 
         alwaysTrue = Mock(return_value=True)
+        args = Namespace(min_tolerable_length=1, stale_period=500, max_tolerable_boredom=100, boredom_set_size=1, full_duration=86400, consensus=1, enable_second_order=False)
         with patch.dict(algorithms.__dict__, {'alwaysTrue': alwaysTrue}):
-            result, ensemble, tail_avg = algorithms.run_selected_algorithm(timeseries)
+            result, ensemble, datapoint = Analyzer(args).is_anomalous(timeseries, "test.metric")
 
-        alwaysTrue.assert_called_with(timeseries)
+
+        alwaysTrue.assert_called_with(timeseries, args)
         self.assertTrue(result)
-        self.assertEqual(ensemble, [True])
-        self.assertEqual(tail_avg, 334)
+        self.assertEqual(ensemble, {'alwaysTrue': True})
+        self.assertEqual(algorithms.tail_avg(timeseries, Namespace()), 334)
 
 
 if __name__ == '__main__':
