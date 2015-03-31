@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--redis", default="redis://localhost:6379/", help="Redis instance to connect to")
     parser.add_argument("--full-duration", type=int, default=86400+3600, help="The length of a full timeseries length")
     parser.add_argument("--clean-timeout", type=int, default=3600, help="This is the amount of extra data to allow")
+    parser.add_argument("--sleep-timeout", type=int, default=3600, help="This is the amount of time roomba will sleep between runs")
     args = parser.parse_args()
 
     log.startLogging(sys.stdout)

@@ -15,6 +15,7 @@ class Roomba(object):
         self.redis_conn = StrictRedis.from_url(args.redis)
         self.full_duration = args.full_duration
         self.clean_timeout = args.clean_timeout
+        self.sleep_timeout = args.sleep_timeout
 
 
     def run(self):
@@ -25,7 +26,7 @@ class Roomba(object):
             if reactor.running:
                 self.clean(metric)
         if reactor.running:
-            time.sleep(30)
+            time.sleep(self.sleep_timeout)
 
 
     def clear_old_anomalies(self):
