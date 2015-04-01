@@ -13,16 +13,6 @@ from twisted.internet import reactor
 
 from regexlist import BlackList, WhiteList
 
-def publish_forever(publisher):
-  while reactor.running:
-    try:
-      publisher.publishCachedData()
-    except:
-      log.err()
-    # The writer thread only sleeps when the cache is empty or an error occurs
-    time.sleep(1)
-
-
 class Publisher(object):
     def __init__(self, arguments, *args, **kwargs):
         self.args = arguments
@@ -71,7 +61,7 @@ class RedisPublisher(Publisher):
         self.pipe.execute()
 
 
-    def publishCachedData(self):
+    def run(self):
         "Write datapoints until the MetricCache is completely empty"
 
         max_age = time.time() - self.args.max_resolution

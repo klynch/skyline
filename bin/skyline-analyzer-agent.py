@@ -6,8 +6,19 @@ import sys
 from twisted.python import log
 from twisted.internet import reactor
 
-from skyline.analyzer.analyzer import analyze_forever, RedisAnalyzer
+from skyline.analyzer.analyzer import RedisAnalyzer
 from skyline.analyzer import check_algorithms
+
+
+def analyze_forever(analyzer):
+    while reactor.running:
+        try:
+            analyzer.run()
+        except:
+            log.err()
+    # The writer thread only sleeps when the cache is empty or an error occurs
+    time.sleep(1)
+
 
 if __name__ == "__main__":
     """

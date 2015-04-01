@@ -5,7 +5,17 @@ import sys
 from twisted.python import log
 from twisted.internet import reactor
 from skyline.horizon.protocols import *
-from skyline.horizon.publishers import publish_forever, RedisPublisher
+from skyline.horizon.publishers import RedisPublisher
+
+
+def publish_forever(publisher):
+  while reactor.running:
+    try:
+      publisher.run()
+    except:
+      log.err()
+    # The writer thread only sleeps when the cache is empty or an error occurs
+    time.sleep(1)
 
 
 if __name__ == "__main__":

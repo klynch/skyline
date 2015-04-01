@@ -23,16 +23,6 @@ class Boring(Exception):
     pass
 
 
-def analyze_forever(analyzer):
-    while reactor.running:
-        try:
-            analyzer.run()
-        except:
-            log.err()
-    # The writer thread only sleeps when the cache is empty or an error occurs
-    time.sleep(1)
-
-
 def emit(metric, value):
     log.msg(metric + " " + value)
 
