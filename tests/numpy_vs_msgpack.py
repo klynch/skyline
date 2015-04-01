@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 import timeit
 import msgpack

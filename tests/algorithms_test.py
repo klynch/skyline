@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import unittest2 as unittest
 from mock import Mock, patch
 from argparse import Namespace
