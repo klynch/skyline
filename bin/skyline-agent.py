@@ -6,6 +6,8 @@ import time
 from twisted.python import log
 from twisted.internet import reactor
 
+from skyline.api import SkylineRedisApi
+
 def run_forever(agent):
     while reactor.running:
         try:
@@ -15,12 +17,12 @@ def run_forever(agent):
     time.sleep(1)
 
 
-def horizon_agent(args):
+def horizon_agent(api, args):
     """
     Start the Horizon agent.
     """
     from skyline.horizon.protocols import MetricLineFactory, MetricPickleFactory, MetricDatagramReceiver
-    from skyline.horizon.publishers import RedisPublisher
+    from skyline.horizon.publishers import Publisher
     if not any((args.line_port, args.pickle_port, args.udp_port)):
         parser.error("specify at least one port to listen on")
 
@@ -31,30 +33,30 @@ def horizon_agent(args):
     if args.udp_port:
         reactor.listenUDP(args.udp_port, MetricDatagramReceiver())
 
-    reactor.callInThread(run_forever, RedisPublisher(args))
+    reactor.callInThread(run_forever, Publisher(api, args))
 
 
-def analyzer_agent(args):
+def analyzer_agent(api, args):
     """
     Start the Analyzer agent.
     """
-    from skyline.analyzer.analyzer import RedisAnalyzer
+    from skyline.analyzer.analyzer import Analyzer
     from skyline.analyzer import check_algorithms
-    check_algorithms(args)
-    reactor.callInThread(run_forever, RedisAnalyzer(args))
+    check_algorithms(api, args)
+    reactor.callInThread(run_forever, Analyzer(api, args))
 
 
-def roomba_agent(args):
+def roomba_agent(api, args):
     """
     Start the Roomba agent.
     """
     from skyline.roomba import Roomba
-    reactor.callInThread(run_forever, Roomba(args))
+    reactor.callInThread(run_forever, Roomba(api, args))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Anomaly detection.")
-    parser.add_argument("-r", "--redis", default="redis://localhost:6379/", help="Redis instance to connect to")
+    parser.add_argument("-r", "--redis", default="redis://localhost:6379/" , help="Redis instance to connect to")
     parser.add_argument("-v", "--verbose", action='store_true', default=False, help="Verbose mode")
 
     subparsers = parser.add_subparsers(title='commands', description='Specify the specific command to run', help='process to run')
@@ -84,13 +86,14 @@ if __name__ == "__main__":
     roomba_parser.add_argument("--sleep-timeout", type=int, default=3600, help="This is the amount of time roomba will sleep between runs")
 
     args = parser.parse_args()
+    api = SkylineRedisApi(args.redis)
 
     if args.which == "horizon":
-        horizon_agent(args)
+        horizon_agent(api, args)
     elif args.which == "analyzer":
-        analyzer_agent(args)
+        analyzer_agent(api, args)
     elif args.which == "roomba":
-        roomba_agent(args)
+        roomba_agent(api, args)
 
     log.startLogging(sys.stdout)
     log.msg("Starting {} with the following arguments:".format(args.which))

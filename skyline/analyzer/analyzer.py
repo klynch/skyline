@@ -1,11 +1,6 @@
-from redis import StrictRedis
 from twisted.internet import reactor
 from twisted.python import log
-import logging
-import traceback
-import msgpack
 import re
-import json
 import time
 import alerts
 import algorithms
@@ -28,24 +23,22 @@ def emit(metric, value):
 
 
 class Analyzer(object):
-    def __init__(self, arguments, *args, **kwargs):
+    def __init__(self, api, arguments, *args, **kwargs):
+        self.api = api
         self.args = arguments
-        self.alerts_rules = []
-        self.alerts_settings = {}
+        self.alerts_rules = self.api.get_alerts_rules()
+        self.alerts_settings = self.api.get_alerts_settings()
 
-    def run(self):
-        pass
 
     def alert(self, metric, datapoint, ensemble, check=False, trigger=True):
         triggers = []
         for pattern, strategy, timeout, args in self.alerts_rules:
             if re.compile(pattern).match(metric):
                 try:
-                    #Set the key with an expiration if it does not exist
-                    key = 'skyline:alert:{}:{}'.format(strategy, metric)
-                    if not self.redis_conn.exists(key) or check:
+                    #Set the alert with an expiration if it does not exist
+                    if not self.api.check_alert(metric, strategy) or check:
                         if not check:
-                            self.redis_conn.setex(key, timeout, time.time())
+                            self.api.set_alert(metric, strategy, timeout)
                         target = getattr(alerts, 'alert_{0}'.format(strategy))
                         settings = self.alerts_settings.get(strategy, {})
                         if trigger:
@@ -55,6 +48,7 @@ class Analyzer(object):
                 except Exception as e:
                     log.err("could not send alert {} for metric {}: {}".format(strategy, metric, e))
         return triggers
+
 
     def is_anomalous(self, timeseries, metric_name):
         """
@@ -122,46 +116,11 @@ class Analyzer(object):
         return abs(intervals[-1] - series.mean()) > 3 * series.std()
 
 
-
-class RedisAnalyzer(Analyzer):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize the Analyzer
-        """
-        super(RedisAnalyzer, self).__init__(*args, **kwargs)
-
-        #We should not need to reconnect
-        log.msg("RedisPublisher connecting to redis: {0}".format(self.args.redis))
-        self.redis_conn = StrictRedis.from_url(self.args.redis)
-
-        #Parse the alerts rules
-        alerts_rules = self.redis_conn.get('skyline:config:alerts:rules')
-        if alerts_rules:
-            self.alerts_rules = json.loads(alerts_rules)
-
-        #Parse the alerts settings
-        alerts_settings = self.redis_conn.get('skyline:config:alerts:settings')
-        if alerts_settings:
-            self.alerts_settings = json.loads(alerts_settings)
-
-
-    def waitfor_connection(self):
-        while reactor.running:
-            try:
-                if self.redis_conn.ping():
-                    return True
-                else:
-                    log.err("RedisAnalyzer ping returned false?")
-                    time.sleep(10)
-            except Exception as e:
-                log.err("RedisAnalyzer can't ping redis: {0}".format(e))
-                time.sleep(10)
-
     def run(self):
         while reactor.running:
-            self.waitfor_connection()
+            self.api.waitfor_connection()
             # Check existence of a newly updated metic
-            metric = self.redis_conn.spop("skyline:metricset:updated")
+            metric = self.api.pop_metricset_updated()
             if metric:
                 self.process(metric)
                 #TODO trim metric
@@ -177,12 +136,8 @@ class RedisAnalyzer(Analyzer):
         """
         if metric:
             # Fetch the metric metadata and data
-            metric_info = self.redis_conn.hgetall("skyline:metric:{0}:info".format(metric))
-            metric_data = self.redis_conn.get("skyline:metric:{0}:data".format(metric))
             try:
-                packer = msgpack.Unpacker(use_list=False)
-                packer.feed(metric_data)
-                timeseries = list(packer)
+                timeseries = self.api.get_metric_data(metric)
                 anomalous, ensemble, datapoint = self.is_anomalous(timeseries, metric)
 
                 # Get the anomaly breakdown - who returned True?
@@ -191,7 +146,7 @@ class RedisAnalyzer(Analyzer):
                         emit("skyline.analyzer.anomaly.{}".format(algorithm), metric)
 
                 # Update the datastore with the results
-                with self.redis_conn.pipeline() as pipe:
+                with self.api.pipeline() as pipe:
                     now = time.time()
                     # Update the anomalous results
                     if anomalous:
