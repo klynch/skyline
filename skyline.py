@@ -77,4 +77,4 @@ if __name__ == "__main__":
     if args.which == "check_anomalies":
         check_anomalies(api)
     if args.which in ["horizon", "analyzer", "roomba"]:
-        run_agent(api, args.which, args)
+        run_agent(parser, api, args.which, args)

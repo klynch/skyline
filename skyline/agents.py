@@ -12,7 +12,7 @@ def run_forever(agent):
     time.sleep(1)
 
 
-def horizon_agent(api, args):
+def horizon_agent(parser, api, args):
     """
     Start the Horizon agent.
     """
@@ -32,7 +32,7 @@ def horizon_agent(api, args):
     reactor.callInThread(run_forever, Publisher(api, args))
 
 
-def analyzer_agent(api, args):
+def analyzer_agent(parser, api, args):
     """
     Start the Analyzer agent.
     """
@@ -42,7 +42,7 @@ def analyzer_agent(api, args):
     reactor.callInThread(run_forever, Analyzer(api, args))
 
 
-def roomba_agent(api, args):
+def roomba_agent(parser, api, args):
     """
     Start the Roomba agent.
     """
@@ -50,16 +50,16 @@ def roomba_agent(api, args):
     reactor.callInThread(run_forever, Roomba(api, args))
 
 
-def run_agent(api, which, args):
+def run_agent(parser, api, which, args):
     """
     Runs a specific agent.
     """
     if which == "horizon":
-        horizon_agent(api, args)
+        horizon_agent(parser, api, args)
     elif which == "analyzer":
-        analyzer_agent(api, args)
+        analyzer_agent(parser, api, args)
     elif which == "roomba":
-        roomba_agent(api, args)
+        roomba_agent(parser, api, args)
 
     log.startLogging(sys.stdout)
     log.msg("Starting {} with the following arguments:".format(args.which))
