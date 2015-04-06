@@ -1,9 +1,23 @@
-redis==2.7.2
-hiredis==0.1.1
-python-daemon==1.6
-flask==0.9
-simplejson==2.0.9
-unittest2
-mock
-#python-simple-hipchat
-msgpack-python==0.4.2
+# core
+Twisted==15.0.0
+redis==2.10.3
+hiredis==0.2.0
+msgpack-python==0.4.6
+
+# algorithms
+numpy==1.9.2
+scipy==0.15.1
+pandas==0.16.0
+patsy==0.3.0
+statsmodels==0.6.1
+
+# web
+Flask==0.10.1
+
+# alerts
+python-simple-hipchat==0.3.3
+pygerduty==0.28
+
+# testing
+unittest2==1.0.1
+mock==1.0.1
