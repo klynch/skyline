@@ -126,7 +126,10 @@ class SkylineRedisApi(object):
 
 
     def get_metricset_all(self):
-        return self.redis_conn.smembers("skyline:metricset:all")
+        metrics = self.redis_conn.smembers("skyline:metricset:all")
+        if metrics is None:
+            return []
+        return metrics
 
 
     def pop_metricset_updated(self):

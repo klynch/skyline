@@ -4,6 +4,7 @@ import argparse
 from skyline.api import SkylineRedisApi
 from skyline.agents import run_agent
 from skyline.utils import check_alert, check_anomalies, check_metric, settings
+from skyline.seed import seed_data
 
 
 if __name__ == "__main__":
@@ -41,6 +42,14 @@ if __name__ == "__main__":
     settings_parser.set_defaults(which="settings")
     settings_parser.add_argument("-i", "--import-file", help="The settings file to import. If an entry is missing from the file, it is set to an emtpy value")
 
+    seed_parser = subparsers.add_parser("seed", help="Seed data.")
+    seed_parser.set_defaults(which="seed_data")
+    seed_parser.add_argument("-d", "--data", required=True, help="seed data file")
+    seed_parser.add_argument("--max-resolution", type=int, default=1000, help="The Horizon agent will ignore incoming datapoints if their timestamp is older than MAX_RESOLUTION seconds ago.")
+    seed_parser.add_argument("-H", "--host", default="localhost", help="The host to send data to")
+    seed_parser.add_argument("-l", "--line-port", type=int, default=0, help="Listen for graphite line data (e.g. 2023)")
+    seed_parser.add_argument("-u", "--udp-port", type=int, default=0, help="Listen for graphite udp data (e.g. 2025)")
+
     check_metric_parser = subparsers.add_parser("check_metric", help="Check a metric in skyline.")
     check_metric_parser.set_defaults(which="check_metric")
     check_metric_parser.add_argument("-m", "--metric", required=True, help="the metric to check (e.g. horizon.test.udp)")
@@ -59,6 +68,8 @@ if __name__ == "__main__":
 
     if args.which == "settings":
         settings(api, args.import_file)
+    if args.which == "seed_data":
+        seed_data(api, args.data, args.max_resolution, args.host, args.line_port, args.udp_port)
     if args.which == "check_metric":
         check_metric(api, args.metric, args.interval)
     if args.which == "check_alert":
