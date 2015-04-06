@@ -4,6 +4,7 @@ from twisted.python import log
 
 from regexlist import BlackList, WhiteList
 
+
 class Publisher(object):
     def __init__(self, api, arguments, *args, **kwargs):
         self.api = api
@@ -28,7 +29,7 @@ class Publisher(object):
                     self.api.publish(metric, filter(lambda x: x[0] >= max_age, datapoints))
                 except Exception as e:
                     log.err("can't publish {0} to datastore: {1}".format(metric, e))
-                    #TODO add metrics back to MetricCache
+                    # TODO add metrics back to MetricCache
                     break
 
             # Avoid churning CPU when only new metrics are in the cache

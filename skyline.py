@@ -9,7 +9,7 @@ from skyline.seed import seed_data
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Anomaly detection.")
-    parser.add_argument("-r", "--redis", default="redis://localhost:6379/" , help="Redis instance to connect to")
+    parser.add_argument("-r", "--redis", default="redis://localhost:6379/", help="Redis instance to connect to")
     parser.add_argument("-v", "--verbose", action='store_true', default=False, help="Verbose mode")
 
     subparsers = parser.add_subparsers(title='commands', description='Specify the specific command to run', help='process to run')
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     roomba_parser = subparsers.add_parser("roomba", help="Cleanup old metric and anomaly data.")
     roomba_parser.set_defaults(which="roomba")
-    roomba_parser.add_argument("--full-duration", type=int, default=86400+3600, help="The length of a full timeseries length")
+    roomba_parser.add_argument("--full-duration", type=int, default=86400 + 3600, help="The length of a full timeseries length")
     roomba_parser.add_argument("--clean-timeout", type=int, default=3600, help="This is the amount of extra data to allow")
     roomba_parser.add_argument("--sleep-timeout", type=int, default=3600, help="This is the amount of time roomba will sleep between runs")
 

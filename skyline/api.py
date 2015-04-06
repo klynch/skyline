@@ -24,10 +24,8 @@ class SkylineRedisApi(object):
         self.redis_conn = StrictRedis.from_url(redis_url)
         self.pipe = self.redis_conn.pipeline()
 
-
     def pipeline(self):
         return self.redis_conn.pipeline()
-
 
     def waitfor_connection(self):
         while reactor.running:
@@ -40,7 +38,6 @@ class SkylineRedisApi(object):
             except Exception as e:
                 log.err("RedisAnalyzer can't ping redis: {0}".format(e))
                 time.sleep(10)
-
 
     def purge(self, metric):
         """Purge every reference to the metric."""
@@ -55,33 +52,29 @@ class SkylineRedisApi(object):
             pipe.execute()
             return True
 
-
     def publish(self, metric, datapoints):
-        #Append the data
+        # Append the data
         data_key = "skyline:metric:{0}:data".format(metric)
         self.pipe.append(data_key, ''.join(map(msgpack.packb, datapoints)))
 
-        #Update some metadata
+        # Update some metadata
         info_key = "skyline:metric:{0}:info".format(metric)
         self.pipe.hincrby(info_key, "length", len(datapoints))
         self.pipe.hset(info_key, "last_updated_at", time.time())
 
-        self.pipe.sadd("skyline:metricset:updated", metric) #Key where the set of recently updated metrics is stored
-        self.pipe.sadd("skyline:metricset:all", metric) #Key where the set of all known metrics is stored
+        self.pipe.sadd("skyline:metricset:updated", metric)  # Key where the set of recently updated metrics is stored
+        self.pipe.sadd("skyline:metricset:all", metric)  # Key where the set of all known metrics is stored
         self.pipe.execute()
-
 
     def get_metric_info(self, metric, pipe=None):
         if pipe is None:
             pipe = self.redis_conn
         return pipe.hgetall("skyline:metric:{0}:info".format(metric))
 
-
     def set_metric_info(self, metric, field, value, pipe=None):
         if pipe is None:
             pipe = self.redis_conn
         pipe.hset("skyline:metric:{0}:info".format(metric), field, value)
-
 
     def get_metric_data(self, metric, pipe=None):
         if pipe is None:
@@ -92,7 +85,6 @@ class SkylineRedisApi(object):
             packer.feed(data)
             return list(packer)
         return []
-
 
     def set_metric_data(self, metric, data, pipe=None):
         if pipe is None:
@@ -108,22 +100,17 @@ class SkylineRedisApi(object):
             pipe.set(data_key, bdata[3:])
         else:
             pipe.set(data_key, bdata[5:])
-
-        # Set the metadata
-        pipe.hset(info_key, "length", length)
-
+        pipe.hset(info_key, "length", length)  # Set the metadata
 
     def get_last_analyzed_results(self, metric, pipe=None):
         if pipe is None:
             pipe = self.redis_conn
         return pipe.hgetall("skyline:metric:{0}:last_analyzed_results".format(metric))
 
-
     def get_last_anomaly_results(self, metric, pipe=None):
         if pipe is None:
             pipe = self.redis_conn
         return pipe.hgetall("skyline:metric:{0}:last_anomaly_results".format(metric))
-
 
     def get_metricset_all(self):
         metrics = self.redis_conn.smembers("skyline:metricset:all")
@@ -131,25 +118,20 @@ class SkylineRedisApi(object):
             return []
         return metrics
 
-
     def pop_metricset_updated(self):
         return self.redis_conn.spop("skyline:metricset:updated")
 
-
     def get_anomalies(self, withscores=True):
         return self.redis_conn.zrangebyscore("skyline:metricset:anomalous", 0, int(time.time()), withscores=withscores)
-
 
     def clear_old_anomalies(self, max_age):
         """Remove every metric who's last anomaly was over full_duration old."""
         return self.redis_conn.zremrangebyscore("skyline:metricset:anomalous", 0, time.time() - max_age)
 
-
     def import_settings(self, settings):
         for key, default in DEFAULT_SETTINGS:
             value = settings.get(key, default)
             self.redis_conn.set(key, json.dumps(value))
-
 
     def export_settings(self):
         settings = {}
@@ -160,14 +142,11 @@ class SkylineRedisApi(object):
                 settings[key] = json.loads(value)
         return settings
 
-
     def get_blacklist(self):
         return json.loads(self.redis_conn.get("skyline:config:blacklist"))
 
-
     def get_whitelist(self):
         return json.loads(self.redis_conn.get("skyline:config:whitelist"))
-
 
     def get_alerts_rules(self):
         """Parse the alerts rules"""
@@ -176,7 +155,6 @@ class SkylineRedisApi(object):
             return json.loads(ret)
         return []
 
-
     def get_alerts_settings(self):
         """Parse the alerts settings"""
         ret = self.redis_conn.get('skyline:config:alerts:settings')
@@ -184,10 +162,8 @@ class SkylineRedisApi(object):
             return json.loads(ret)
         return {}
 
-
     def check_alert(self, metric, strategy):
         return self.redis_conn.exists('skyline:alert:{}:{}'.format(strategy, metric))
-
 
     def set_alert(self, metric, strategy, timeout):
         self.redis_conn.setex('skyline:alert:{}:{}'.format(strategy, metric), timeout, time.time())

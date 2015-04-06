@@ -6,6 +6,7 @@ from twisted.python import log
 from algorithms import *
 from analyzer import Analyzer
 
+
 def check_algorithms(api, args):
     # Make sure we can run all the algorithms
     try:

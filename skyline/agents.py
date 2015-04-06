@@ -3,6 +3,7 @@ import time
 from twisted.python import log
 from twisted.internet import reactor
 
+
 def run_forever(agent):
     while reactor.running:
         try:
@@ -63,7 +64,7 @@ def run_agent(parser, api, which, args):
 
     log.startLogging(sys.stdout)
     log.msg("Starting {} with the following arguments:".format(args.which))
-    for a,v in vars(args).iteritems():
+    for a, v in vars(args).iteritems():
         log.msg("   {0}={1}".format(a, v))
 
     reactor.run()

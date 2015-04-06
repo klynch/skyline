@@ -24,6 +24,7 @@ ALGORITHMS = [
     'ks_test',
 ]
 
+
 def tail_avg(timeseries, args):
     """
     This is a utility function used to calculate the average of the last three

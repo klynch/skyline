@@ -29,13 +29,12 @@ class Analyzer(object):
         self.alerts_rules = self.api.get_alerts_rules()
         self.alerts_settings = self.api.get_alerts_settings()
 
-
     def alert(self, metric, datapoint, ensemble, check=False, trigger=True):
         triggers = []
         for pattern, strategy, timeout, args in self.alerts_rules:
             if re.compile(pattern).match(metric):
                 try:
-                    #Set the alert with an expiration if it does not exist
+                    # Set the alert with an expiration if it does not exist
                     if not self.api.check_alert(metric, strategy) or check:
                         if not check:
                             self.api.set_alert(metric, strategy, timeout)
@@ -48,7 +47,6 @@ class Analyzer(object):
                 except Exception as e:
                     log.err("could not send alert {} for metric {}: {}".format(strategy, metric, e))
         return triggers
-
 
     def is_anomalous(self, timeseries, metric_name):
         """
@@ -66,7 +64,7 @@ class Analyzer(object):
         if len(set(item[1] for item in timeseries[-self.args.max_tolerable_boredom:])) == self.args.boredom_set_size:
             raise Boring()
 
-        ensemble = { algorithm: getattr(algorithms, algorithm)(timeseries, self.args) for algorithm in algorithms.ALGORITHMS }
+        ensemble = {algorithm: getattr(algorithms, algorithm)(timeseries, self.args) for algorithm in algorithms.ALGORITHMS}
 
         if ensemble.values().count(True) >= self.args.consensus:
             return True, ensemble, timeseries[-1]
@@ -77,7 +75,6 @@ class Analyzer(object):
                 return True, ensemble, timeseries[-1]
 
         return False, ensemble, timeseries[-1]
-
 
     def is_anomalously_anomalous(self, metric_name, ensemble, datapoint):
         """
@@ -96,8 +93,7 @@ class Analyzer(object):
         trigger_history = unpackb(raw_trigger_history)
 
         # Are we (probably) triggering on the same data?
-        if (new_trigger[1] == trigger_history[-1][1] and
-            new_trigger[0] - trigger_history[-1][0] <= 300):
+        if (new_trigger[1] == trigger_history[-1][1] and new_trigger[0] - trigger_history[-1][0] <= 300):
             return False
 
         # Update the history
@@ -115,7 +111,6 @@ class Analyzer(object):
         series = pandas.Series(intervals)
         return abs(intervals[-1] - series.mean()) > 3 * series.std()
 
-
     def run(self):
         while reactor.running:
             self.api.waitfor_connection()
@@ -123,12 +118,12 @@ class Analyzer(object):
             metric = self.api.pop_metricset_updated()
             if metric:
                 self.process(metric)
-                #TODO trim metric
+                # TODO trim metric
             else:
                 if int(time.time()) % 60 == 0:
                     log.msg("nothing to do")
                 time.sleep(1)
-            #TODO send codahale metrics
+            # TODO send codahale metrics
 
     def process(self, metric):
         """

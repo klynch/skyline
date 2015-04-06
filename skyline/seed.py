@@ -3,6 +3,7 @@ import redis
 import socket
 import time
 
+
 def verify_metric_exists(api, metric):
     if metric not in api.get_metricset_all():
         raise Exception("Missing metric in set: {0}".format(metric))

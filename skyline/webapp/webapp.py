@@ -1,15 +1,11 @@
 import argparse
 import redis
 import logging
-import simplejson as json
+import json
 import sys
 from msgpack import Unpacker
 from flask import Flask, request, render_template
 from os.path import dirname, abspath
-
-# add the shared settings file to namespace
-sys.path.insert(0, dirname(dirname(abspath(__file__))))
-import settings
 
 REDIS_CONN = None
 
@@ -45,7 +41,7 @@ def data():
             resp = json.dumps({'results': 'Error: No metric by that name'})
             return resp, 404
         else:
-            unpacker = Unpacker(use_list = False)
+            unpacker = Unpacker(use_list=False)
             unpacker.feed(raw_series)
             timeseries = [item[:2] for item in unpacker]
             resp = json.dumps({'results': timeseries})

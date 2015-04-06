@@ -36,7 +36,7 @@ def alert_smtp(metric, datapoint, ensemble, args, settings):
         msg['Subject'] = '[Skyline] {0}'.format(metric)
         msg['From'] = sender
         msg['To'] = recipient
-        link = "" #settings.GRAPH_URL.format(metric)
+        link = ""  # settings.GRAPH_URL.format(metric)
         body = 'Anomalous metric: {0} (datapoint: {1})<br><a href="{2}"><img src="{2}"/></a>'.format(metric, datapoint, link)
         msg.attach(MIMEText(body, 'html'))
         conn.sendmail(sender, recipients, msg.as_string())
@@ -53,12 +53,12 @@ def alert_hipchat(metric, datapoint, ensemble, args, settings):
     import hipchat
     hipster = hipchat.HipChat(token=settings['auth_token'])
     rooms = kwargs['rooms']
-    link = "" #settings.GRAPH_URL.format(metric)
+    link = ""  # settings.GRAPH_URL.format(metric)
     for room in rooms:
-        hipster.method('rooms/message',method='POST', parameters={'room_id': room,
-                                                                  'from': 'Skyline',
-                                                                  'color': 'red',
-                                                                  'message': 'Anomalous metric: {0} (datapoint: {1})<br><a href="{2}"><img src="{2}"/></a>'.format(metric, datapoint, link)})
+        hipster.method('rooms/message', method='POST', parameters={'room_id': room,
+                                                                   'from': 'Skyline',
+                                                                   'color': 'red',
+                                                                   'message': 'Anomalous metric: {0} (datapoint: {1})<br><a href="{2}"><img src="{2}"/></a>'.format(metric, datapoint, link)})
 
 
 def alert_stdout(metric, datapoint, ensemble, args, settings):

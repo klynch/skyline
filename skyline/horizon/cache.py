@@ -15,49 +15,49 @@ limitations under the License."""
 from threading import Lock
 from twisted.python import log
 
+
 class MetricCache(dict):
-  def __init__(self, max_size=None):
-    self.size = 0
-    self.lock = Lock()
-    self.max_size = max_size
+    def __init__(self, max_size=None):
+        self.size = 0
+        self.lock = Lock()
+        self.max_size = max_size
 
-  def __setitem__(self, key, value):
-    raise TypeError("Use store() method instead!")
+    def __setitem__(self, key, value):
+        raise TypeError("Use store() method instead!")
 
-  def store(self, metric, datapoint):
-    with self.lock:
-      self.setdefault(metric, []).append(datapoint)
-      self.size += 1
+    def store(self, metric, datapoint):
+        with self.lock:
+            self.setdefault(metric, []).append(datapoint)
+            self.size += 1
 
-    if self.isFull():
-      log.msg("MetricCache is full: self.size=%d" % self.size)
+        if self.isFull():
+            log.msg("MetricCache is full: self.size=%d" % self.size)
 
-  def isFull(self):
-    return self.max_size and self.size >= self.max_size
+    def isFull(self):
+        return self.max_size and self.size >= self.max_size
 
-  def pop(self, metric):
-    with self.lock:
-      datapoints = dict.pop(self, metric)
-      self.size -= len(datapoints)
-      return datapoints
+    def pop(self, metric):
+        with self.lock:
+            datapoints = dict.pop(self, metric)
+            self.size -= len(datapoints)
+            return datapoints
 
-  def counts(self):
-    with self.lock:
-      return [ (metric, len(datapoints)) for (metric, datapoints) in self.items() ]
+    def counts(self):
+        with self.lock:
+            return [(metric, len(datapoints)) for (metric, datapoints) in self.items()]
 
-  def metrics(self):
-    metrics = self.counts()
-    metrics.sort(key=lambda item: item[1], reverse=True)
+    def metrics(self):
+        metrics = self.counts()
+        metrics.sort(key=lambda item: item[1], reverse=True)
 
-    for metric, queueSize in metrics:
-      try:  # metrics can momentarily disappear from the MetricCache due to the implementation of MetricCache.store()
-        datapoints = self.pop(metric)
-      except KeyError:
-        log.msg("MetricCache contention, skipping %s update for now" % metric)
-        continue  # we simply move on to the next metric when this race condition occurs
+        for metric, queueSize in metrics:
+            try:  # metrics can momentarily disappear from the MetricCache due to the implementation of MetricCache.store()
+                datapoints = self.pop(metric)
+            except KeyError:
+                log.msg("MetricCache contention, skipping %s update for now" % metric)
+                continue  # we simply move on to the next metric when this race condition occurs
 
-      yield (metric, datapoints)
-
+            yield (metric, datapoints)
 
 
 # Ghetto singleton
