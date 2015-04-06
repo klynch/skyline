@@ -24,7 +24,7 @@ if __name__ == "__main__":
     analyzer_parser = subparsers.add_parser("analyzer", help="Analyze metrics and detect anomalies.")
     analyzer_parser.set_defaults(which="analyzer")
     analyzer_parser.add_argument("--enable-second-order", action="store_true", default=False, help="This is to enable second order anomalies. (EXPERIMENTAL)")
-    analyzer_parser.add_argument("-c", "--consensus", type=int, default=6, help="The number of algorithms that must return True before a metric is classified as anomalous")
+    analyzer_parser.add_argument("-c", "--consensus", type=int, default=4, help="The number of algorithms that must return True before a metric is classified as anomalous")
     analyzer_parser.add_argument("--full-duration", type=int, default=86400, help="The length of a full timeseries length")
     analyzer_parser.add_argument("--min-tolerable-length", type=int, default=1, help="The minimum length of a timeseries, in datapoints, for the analyzer to recognize it as a complete series")
     analyzer_parser.add_argument("--max-tolerable-boredom", type=int, default=100, help="Sometimes a metric will continually transmit the same number. There's no need to analyze metrics that remain boring like this, so this setting determines the amount of boring datapoints that will be allowed to accumulate before the analyzer skips over the metric. If the metric becomes noisy again, the analyzer will stop ignoring it.")
