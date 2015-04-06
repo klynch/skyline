@@ -1,57 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
-import time
-from twisted.python import log
-from twisted.internet import reactor
-
 from skyline.api import SkylineRedisApi
-
-def run_forever(agent):
-    while reactor.running:
-        try:
-            agent.run()
-        except:
-            log.err()
-    time.sleep(1)
-
-
-def horizon_agent(api, args):
-    """
-    Start the Horizon agent.
-    """
-    from skyline.horizon.protocols import MetricLineFactory, MetricPickleFactory, MetricDatagramReceiver
-    from skyline.horizon.publishers import Publisher
-    if not any((args.line_port, args.pickle_port, args.udp_port)):
-        parser.error("specify at least one port to listen on")
-
-    if args.line_port:
-        reactor.listenTCP(args.line_port, MetricLineFactory(), interface=args.interface)
-    if args.pickle_port:
-        reactor.listenTCP(args.pickle_port, MetricPickleFactory())
-    if args.udp_port:
-        reactor.listenUDP(args.udp_port, MetricDatagramReceiver())
-
-    reactor.callInThread(run_forever, Publisher(api, args))
-
-
-def analyzer_agent(api, args):
-    """
-    Start the Analyzer agent.
-    """
-    from skyline.analyzer.analyzer import Analyzer
-    from skyline.analyzer import check_algorithms
-    check_algorithms(api, args)
-    reactor.callInThread(run_forever, Analyzer(api, args))
-
-
-def roomba_agent(api, args):
-    """
-    Start the Roomba agent.
-    """
-    from skyline.roomba import Roomba
-    reactor.callInThread(run_forever, Roomba(api, args))
+from skyline.agents import run_agent
+from skyline.utils import check_alert, check_anomalies, check_metric, settings
 
 
 if __name__ == "__main__":
@@ -85,19 +37,33 @@ if __name__ == "__main__":
     roomba_parser.add_argument("--clean-timeout", type=int, default=3600, help="This is the amount of extra data to allow")
     roomba_parser.add_argument("--sleep-timeout", type=int, default=3600, help="This is the amount of time roomba will sleep between runs")
 
+    settings_parser = subparsers.add_parser("settings", help="Import and export settings.")
+    settings_parser.set_defaults(which="settings")
+    settings_parser.add_argument("-i", "--import-file", help="The settings file to import. If an entry is missing from the file, it is set to an emtpy value")
+
+    check_metric_parser = subparsers.add_parser("check_metric", help="Check a metric in skyline.")
+    check_metric_parser.set_defaults(which="check_metric")
+    check_metric_parser.add_argument("-m", "--metric", required=True, help="the metric to check (e.g. horizon.test.udp)")
+    check_metric_parser.add_argument("-i", "--interval", type=int, default=10, help="the metric datapoint interval")
+
+    check_alert_parser = subparsers.add_parser("check_alert", help="Test if an alert would be triggered for a given metric.")
+    check_alert_parser.set_defaults(which="check_alert")
+    check_alert_parser.add_argument("-m", "--metric", required=True, help="Pass the metric to test")
+    check_alert_parser.add_argument("-t", "--trigger", action='store_true', help="Actually trigger the appropriate alerts")
+
+    check_anomalies_parser = subparsers.add_parser("check_anomalies", help="List the anomalies currently in the system.")
+    check_anomalies_parser.set_defaults(which="check_anomalies")
+
     args = parser.parse_args()
     api = SkylineRedisApi(args.redis)
 
-    if args.which == "horizon":
-        horizon_agent(api, args)
-    elif args.which == "analyzer":
-        analyzer_agent(api, args)
-    elif args.which == "roomba":
-        roomba_agent(api, args)
-
-    log.startLogging(sys.stdout)
-    log.msg("Starting {} with the following arguments:".format(args.which))
-    for a,v in vars(args).iteritems():
-        log.msg("   {0}={1}".format(a, v))
-
-    reactor.run()
+    if args.which == "settings":
+        settings(api, args.import_file)
+    if args.which == "check_metric":
+        check_metric(api, args.metric, args.interval)
+    if args.which == "check_alert":
+        check_alert(api, args, args.metric, args.trigger)
+    if args.which == "check_anomalies":
+        check_anomalies(api)
+    if args.which in ["horizon", "analyzer", "roomba"]:
+        run_agent(api, args.which, args)

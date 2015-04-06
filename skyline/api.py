@@ -6,6 +6,15 @@ import json
 import time
 
 
+DEFAULT_SETTINGS = [
+    ("skyline:config:alerts:rules", []),
+    ("skyline:config:alerts:settings", {}),
+    ("skyline:config:blacklist", []),
+    ("skyline:config:whitelist", []),
+    ("skyline:config:graphite", {}),
+]
+
+
 class SkylineRedisApi(object):
     def __init__(self, redis_url, *args, **kwargs):
         """
@@ -104,6 +113,17 @@ class SkylineRedisApi(object):
         pipe.hset(info_key, "length", length)
 
 
+    def get_last_analyzed_results(self, metric, pipe=None):
+        if pipe is None:
+            pipe = self.redis_conn
+        return pipe.hgetall("skyline:metric:{0}:last_analyzed_results".format(metric))
+
+
+    def get_last_anomaly_results(self, metric, pipe=None):
+        if pipe is None:
+            pipe = self.redis_conn
+        return pipe.hgetall("skyline:metric:{0}:last_anomaly_results".format(metric))
+
 
     def get_metricset_all(self):
         return self.redis_conn.smembers("skyline:metricset:all")
@@ -113,9 +133,29 @@ class SkylineRedisApi(object):
         return self.redis_conn.spop("skyline:metricset:updated")
 
 
+    def get_anomalies(self, withscores=True):
+        return self.redis_conn.zrangebyscore("skyline:metricset:anomalous", 0, int(time.time()), withscores=withscores)
+
+
     def clear_old_anomalies(self, max_age):
         """Remove every metric who's last anomaly was over full_duration old."""
         return self.redis_conn.zremrangebyscore("skyline:metricset:anomalous", 0, time.time() - max_age)
+
+
+    def import_settings(self, settings):
+        for key, default in DEFAULT_SETTINGS:
+            value = settings.get(key, default)
+            self.redis_conn.set(key, json.dumps(value))
+
+
+    def export_settings(self):
+        settings = {}
+        for key, default in DEFAULT_SETTINGS:
+            settings[key] = default
+            value = self.redis_conn.get(key)
+            if value is not None:
+                settings[key] = json.loads(value)
+        return settings
 
 
     def get_blacklist(self):
