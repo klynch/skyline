@@ -64,10 +64,11 @@ class TestAlgorithms(unittest.TestCase):
         self.assertTrue(algorithms.histogram_bins(timeseries, Namespace()))
 
     @patch.object(algorithms.time, 'time')
-    def test_run_selected_algorithm(self, timeMock):
+    @patch('skyline.api.SkylineRedisApi')
+    def test_run_selected_algorithm(self, ApiMock, timeMock):
         timeMock.return_value, timeseries = self.data(time())
         args = Namespace(min_tolerable_length=1, stale_period=500, max_tolerable_boredom=100, boredom_set_size=1, full_duration=86400, consensus=6)
-        result, ensemble, datapoint = Analyzer(args).is_anomalous(timeseries, "test.metric")
+        result, ensemble, datapoint = Analyzer(ApiMock(), args).is_anomalous(timeseries, "test.metric")
         #algorithms.run_selected_algorithm(timeseries, "test.metric")
         self.assertTrue(result)
         self.assertTrue(len(filter(None, ensemble)) >= 4)
@@ -77,7 +78,8 @@ class TestAlgorithms(unittest.TestCase):
     #@unittest.skip('Fails inexplicable in certain environments.')
     @patch.object(algorithms, 'ALGORITHMS')
     @patch.object(algorithms.time, 'time')
-    def test_run_selected_algorithm_runs_novel_algorithm(self, timeMock,
+    @patch('skyline.api.SkylineRedisApi')
+    def test_run_selected_algorithm_runs_novel_algorithm(self, ApiMock, timeMock,
                                                          algorithmsListMock):
         """
         Assert that a user can add their own custom algorithm.
@@ -92,7 +94,7 @@ class TestAlgorithms(unittest.TestCase):
         alwaysTrue = Mock(return_value=True)
         args = Namespace(min_tolerable_length=1, stale_period=500, max_tolerable_boredom=100, boredom_set_size=1, full_duration=86400, consensus=1, enable_second_order=False)
         with patch.dict(algorithms.__dict__, {'alwaysTrue': alwaysTrue}):
-            result, ensemble, datapoint = Analyzer(args).is_anomalous(timeseries, "test.metric")
+            result, ensemble, datapoint = Analyzer(ApiMock(), args).is_anomalous(timeseries, "test.metric")
 
 
         alwaysTrue.assert_called_with(timeseries, args)
