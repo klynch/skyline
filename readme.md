@@ -19,10 +19,16 @@ Read the details in the [wiki](https://github.com/etsy/skyline/wiki).
 
 ## Install
 
-1. `sudo pip install -r requirements.txt` for the easy bits
+1. Download and install the latest Redis release
 
-2. Install numpy, scipy, pandas, patsy, statsmodels, msgpack_python in that
-order.
+2. Install `numpy` and `scipy` independently via `pip` followed by the rest of the requirements. Dependency resolution
+   in `pip` does not allow the to be installed in the requirements file (SciPy depends on NumPy in an odd way). The
+   solution is to install these two explicitly.
+   ```
+   pip install numpy
+   pip install scipy
+   pip install -r requirements.txt
+   ```
 
 2. You may have trouble with SciPy. If you're on a Mac, try:
 
@@ -33,47 +39,24 @@ order.
 On Debian, apt-get works well for Numpy and SciPy. On Centos, yum should do the
 trick. If not, hit the Googles, yo.
 
-3. `cp src/settings.py.example src/settings.py`
-
-4. Add directories:
-
-```
-sudo mkdir /var/log/skyline
-sudo mkdir /var/run/skyline
-sudo mkdir /var/log/redis
-sudo mkdir /var/dump/
-```
-
-5. Download and install the latest Redis release
-
-6. Start 'er up
-
-* `cd skyline/bin`
-* `sudo redis-server redis.conf`
-* `sudo ./horizon.d start`
-* `sudo ./analyzer.d start`
-* `sudo ./webapp.d start`
-
 By default, the webapp is served on port 1500.
 
 7. Check the log files to ensure things are running.
 
 [Debian + Vagrant specific, if you prefer](https://github.com/etsy/skyline/wiki/Debian-and-Vagrant-Installation-Tips)
 
-### Gotchas
-
-* If you already have a Redis instance running, it's recommended to kill it and
-restart using the configuration settings provided in bin/redis.conf
-
-* Be sure to create the log directories.
 
 ### Hey! Nothing's happening!
+
 Of course not. You've got no data! For a quick and easy test of what you've
 got, run this:
-```
-cd utils
-python seed_data.py
-```
+
+    python ./skyline.py settings -i data/settings.json
+    python ./skyline.py horizon -l 2023 -u 2025
+    python ./skyline.py seed -l 2023 -u 2025 -d data/data.json
+    python ./skyline.py analyzer
+
+
 This will ensure that the Horizon
 service is properly set up and can receive data. For real data, you have some
 options - see [wiki](https://github.com/etsy/skyline/wiki/Getting-Data-Into-Skyline)
@@ -81,6 +64,7 @@ options - see [wiki](https://github.com/etsy/skyline/wiki/Getting-Data-Into-Skyl
 Once you get real data flowing through your system, the Analyzer will be able start analyzing for anomalies!  But be
 aware, analyzer it will only start to really analyzing timeseries when redis has `FULL_DURATION` (e.g. 86400 seconds)
 worth of data, otherwise it is too short aka less than `MIN_TOLERABLE_LENGTH`.
+
 
 ### Metric Filtering
 
@@ -97,7 +81,7 @@ Metrics are rejected if `skyline:config:whitelist` is defined in Redis and non-e
 least 1 of the regular expression patterns in that list. To accept all metrics the pattern `.*` can be used, or the list
 can be empty.
 
-    BLACKLIST = [
+    "skyline:config:blacklist": [
         "^skyline\."
         "^example\.statsd\.metric$",
         "^another\.example\..*",
@@ -109,7 +93,7 @@ can be empty.
         "\.sum$",
     ]
 
-    WHITELIST = []
+    "skyline:config:whitelist": []
 
 
 ### Alerts
@@ -134,9 +118,9 @@ This is the config for which metrics to alert on and which strategy to use for e
 where pattern is a regular expression string, alert is an identifier for the alert, expiration timeout is the time the
 alert/metric pair is quiet for, and arguments is an alert specific dictionary.
 
-    ALERTS = [
+    "skyline:config:alerts:rules": [
         [".*",      "stdout",    1800, {}],
-        ["skyline", "smtp",      1800, { "recipients": ["sre@squarespace.com"] }],
+        ["skyline", "smtp",      1800, { "recipients": ["oncall@squarespace.com"] }],
         ["metric1", "hipchat",   1800, { "rooms": [12345] }],
         ["metric2", "pagerduty", 1800, { "rooms": [12345] }],
     ]
@@ -144,13 +128,13 @@ alert/metric pair is quiet for, and arguments is an alert specific dictionary.
 
 General alert settings are stored as a JSON blob in the Redis key `skyline:config:alerts:settings`.
 
-    ALERT_SETTINGS = {
+    "skyline:config:alerts:settings": {
         #This specifies the mailserver to connect to. If user or password are blank no authentication is used.
         "smtp": {
             "host": "127.0.0.1:25",
             "user": "skyline",
             "password": "",
-            "sender": "skyline-alerts@etsy.com",
+            "sender": "skyline-alerts@squarespace.com",
         },
 
         # HipChat alerts require python-simple-hipchat
@@ -190,21 +174,24 @@ where `%s` will be replaced by the metric name.
 An ensemble of algorithms vote. Majority rules. Batteries __kind of__ included.
 See [wiki](https://github.com/etsy/skyline/wiki/Analyzer)
 
+
 ### Architecture
 See the rest of the
 [wiki](https://github.com/etsy/skyline/wiki)
 
+
 ### Contributions
+
 1. Clone your fork
 2. Hack away
 3. If you are adding new functionality, document it in the README or wiki
 4. If necessary, rebase your commits into logical chunks, without errors
 5. Verfiy your code by running the test suite and pep8, adding additional tests if able.
 6. Push the branch up to GitHub
-7. Send a pull request to the etsy/skyline project.
+7. Send a pull request to the project.
 
 We actively welcome contributions. If you don't know where to start, try
-checking out the [issue list](https://github.com/etsy/skyline/issues) and
+checking out the issue list and
 fixing up the place. Or, you can add an algorithm - a goal of this project
 is to have a very robust set of algorithms to choose from.
 
