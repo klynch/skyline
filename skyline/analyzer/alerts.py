@@ -14,7 +14,8 @@ Two arguments will be passed, both of them tuples: alert and metric.
 
 metric: the anomalous metric
 datapoint: the anomalous datapoint (timestamp, value)
-kwargs: alert specific settings (e.g. notification recipient)
+ensemble: the ensemble result dictionary
+args: alert specific settings (e.g. notification recipient)
 settings: general alert settings (e.g. authentication information)
 """
 
@@ -30,14 +31,15 @@ def alert_smtp(metric, datapoint, ensemble, args, settings):
         conn.login(user, password)
 
     sender = settings['sender']
-    recipients = kwargs['recipients']
+    recipients = args['recipients']
     for recipient in recipients:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = '[Skyline] {0}'.format(metric)
         msg['From'] = sender
         msg['To'] = recipient
         link = ""  # settings.GRAPH_URL.format(metric)
-        body = 'Anomalous metric: {0} (datapoint: {1})<br><a href="{2}"><img src="{2}"/></a>'.format(metric, datapoint, link)
+        # body = 'Anomalous metric: {0} (datapoint: {1})<br><a href="{2}"><img src="{2}"/></a>'.format(metric, datapoint, link)
+        body = 'Anomalous metric: {0} (datapoint: {1})'.format(metric, datapoint)
         msg.attach(MIMEText(body, 'html'))
         conn.sendmail(sender, recipients, msg.as_string())
     conn.quit()
@@ -52,13 +54,15 @@ def alert_pagerduty(metric, datapoint, ensemble, args, settings):
 def alert_hipchat(metric, datapoint, ensemble, args, settings):
     import hipchat
     hipster = hipchat.HipChat(token=settings['auth_token'])
-    rooms = kwargs['rooms']
+    rooms = args['rooms']
     link = ""  # settings.GRAPH_URL.format(metric)
+    # body = 'Anomalous metric: {0} (datapoint: {1})<br><a href="{2}"><img src="{2}"/></a>'.format(metric, datapoint, link)
+    body = 'Anomalous metric: {0} (datapoint: {1})'.format(metric, datapoint)
     for room in rooms:
         hipster.method('rooms/message', method='POST', parameters={'room_id': room,
                                                                    'from': 'Skyline',
-                                                                   'color': 'red',
-                                                                   'message': 'Anomalous metric: {0} (datapoint: {1})<br><a href="{2}"><img src="{2}"/></a>'.format(metric, datapoint, link)})
+                                                                   'color': settings.get('color', 'red'),
+                                                                   'message': body})
 
 
 def alert_stdout(metric, datapoint, ensemble, args, settings):
