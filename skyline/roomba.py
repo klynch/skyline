@@ -13,6 +13,7 @@ class Roomba(object):
         self.full_duration = args.full_duration
         self.clean_timeout = args.clean_timeout
         self.sleep_timeout = args.sleep_timeout
+        self.sleep_period = 5
 
     def run(self):
         """Trim metrics that are older than full_duration and purge old metrics."""
@@ -21,7 +22,13 @@ class Roomba(object):
             if reactor.running:
                 self.clean(metric)
         if reactor.running:
-            time.sleep(self.sleep_timeout)
+            if self.sleep_timeout < self.sleep_period:
+                time.sleep(self.sleep_timeout)
+            else:
+                for i in xrange(self.sleep_timeout / self.sleep_period):
+                    time.sleep(self.sleep_period)
+                    if not reactor.running:
+                        return
 
     def clean(self, metric):
         now = time.time()
