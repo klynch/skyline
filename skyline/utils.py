@@ -70,7 +70,7 @@ def send_graphite_metric(graphite_host, graphite_port, name, value):
     if graphite:
         try:
             sock = socket.socket()
-            sock.connect((settings.GRAPHITE_HOST, settings.CARBON_PORT))
+            sock.connect((graphite_host, graphite_port))
             sock.sendall('%s %s %i\n' % (name, value, time.time()))
             sock.close()
             return True
@@ -103,7 +103,7 @@ def settings(api, import_file=None, export=True):
         with open(import_file) as f:
             api.import_settings(json.load(f))
     if export:
-        print json.dumps(api.export_settings(), indent=2, sort_keys=True)
+        print json.dumps(api.export_settings(), indent=4, sort_keys=True)
 
 
 def print_metric_data(api, metric, interval):
