@@ -12,8 +12,8 @@ WORKDIR /usr/src/app
 
 #pip dependency resolution does not allow numpy and scipy to be installed in the requirements file (scipy depends on
 #numpy in an odd way). Solution is to install these two explicitly
-RUN pip install numpy==1.9.2
-RUN pip install scipy==0.15.1
+RUN pip install numpy==1.9.2 && \
+    pip install scipy==0.15.1
 
 COPY requirements.txt /usr/src/app/
 RUN pip install -r requirements.txt
