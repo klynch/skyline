@@ -42,16 +42,16 @@ def seed_data(api, data_file, max_resolution, host, line_port=0, udp_port=0, ver
 
         initial = int(time.time()) - max_resolution
         if line_port:
-            print 'Loading data over line via Horizon...'
+            print('Loading data over line via Horizon...')
             metric = 'horizon.test.line'
             seed_line(host, line_port, metric, timeseries, initial)
             if verify:
                 verify_metric_exists(api, metric)
         if udp_port:
-            print 'Loading data over udp via Horizon...'
+            print('Loading data over udp via Horizon...')
             metric = 'horizon.test.udp'
             seed_udp(host, udp_port, metric, timeseries, initial)
             if verify:
                 verify_metric_exists(api, metric)
     except Exception as e:
-        print e
+        print(e)

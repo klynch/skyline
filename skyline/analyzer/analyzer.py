@@ -1,5 +1,6 @@
 from twisted.internet import reactor
 from twisted.python import log
+import collections
 import re
 import time
 import skyline.analyzer.alerts
@@ -66,7 +67,7 @@ class Analyzer(object):
 
         ensemble = {algorithm: getattr(skyline.analyzer.algorithms, algorithm)(timeseries, self.args) for algorithm in skyline.analyzer.algorithms.ALGORITHMS}
 
-        if ensemble.values().count(True) >= self.args.consensus:
+        if collections.Counter(ensemble.values())[True] >= self.args.consensus:
             return True, ensemble, timeseries[-1]
 
         # Check for second order anomalies
