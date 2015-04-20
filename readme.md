@@ -98,14 +98,14 @@ can be empty.
 
 ### Alerts
 
-Skyline can alert you! In your settings.py, add any alerts you want to the ALERTS list, according to the schema `(metric
+Skyline can alert you! Add any alerts you want to the ALERTS parameter stored in Redis, according to the schema `(metric
 pattern, strategy, expiration timeout seconds, strategy arguments)` where `strategy` is one of `smtp`, `hipchat`,
 `pagerduty`, `syslog`, or `stdout`.  Wildcards can be used in the `metric keyword` as well. You can also add your own
 alerting strategies.  For every anomalous metric, Skyline will search for the given keyword and trigger the
 corresponding alert(s). To prevent alert fatigue, Skyline will only alert once every <expiration seconds> for any given
 metric/strategy combination. To enable Hipchat integration, uncomment the python-simple-hipchat line in the
 requirements.txt file.  If using syslog then the `EXPIRATION_TIME` should be set to 1 for this to be effective in
-catching every anomaly, e.g.  `("stats", "syslog", 1)`
+catching every anomaly, e.g.  `("stats", "syslog", 1, {})`
 
 This is the config for which metrics to alert on and which strategy to use for each.  Alerts will not fire twice within
 `timeout` period, even if they trigger again.  This is stored as JSON data in the Redis key
@@ -139,7 +139,7 @@ General alert settings are stored as a JSON blob in the Redis key `skyline:confi
 
         # HipChat alerts require python-simple-hipchat
         # Background color is one of "yellow", "red", "green", "purple", "gray", or "random"
-        "hipchar": {
+        "hipchat": {
             "auth_token": "pagerduty_auth_token",
             "color": "purple",
         },
