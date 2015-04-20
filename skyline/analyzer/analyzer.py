@@ -2,8 +2,8 @@ from twisted.internet import reactor
 from twisted.python import log
 import re
 import time
-import alerts
-import algorithms
+import skyline.analyzer.alerts
+import skyline.analyzer.algorithms
 
 
 class TooShort(Exception):
@@ -64,7 +64,7 @@ class Analyzer(object):
         if len(set(item[1] for item in timeseries[-self.args.max_tolerable_boredom:])) == self.args.boredom_set_size:
             raise Boring()
 
-        ensemble = {algorithm: getattr(algorithms, algorithm)(timeseries, self.args) for algorithm in algorithms.ALGORITHMS}
+        ensemble = {algorithm: getattr(skyline.analyzer.algorithms, algorithm)(timeseries, self.args) for algorithm in skyline.analyzer.algorithms.ALGORITHMS}
 
         if ensemble.values().count(True) >= self.args.consensus:
             return True, ensemble, timeseries[-1]

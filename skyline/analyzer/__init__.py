@@ -3,8 +3,8 @@ import time
 import traceback
 from twisted.python import log
 
-from algorithms import *
-from analyzer import Analyzer
+from skyline.analyzer.algorithms import *
+from skyline.analyzer.analyzer import Analyzer
 
 
 def check_algorithms(api, args):
