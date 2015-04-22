@@ -1,13 +1,9 @@
 import json
 import socket
 import time
+from io import BytesIO
+
 from .analyzer import Analyzer
-
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 try:
     import cPickle as pickle
@@ -40,7 +36,7 @@ if USING_CPICKLE:
 
         @classmethod
         def loads(cls, pickle_string):
-            pickle_obj = pickle.Unpickler(StringIO(pickle_string))
+            pickle_obj = pickle.Unpickler(BytesIO(pickle_string))
             pickle_obj.find_global = cls.find_class
             return pickle_obj.load()
 
@@ -62,7 +58,7 @@ else:
 
         @classmethod
         def loads(cls, pickle_string):
-            return cls(StringIO(pickle_string)).load()
+            return cls(BytesIO(pickle_string)).load()
 # //SafeUnpickler
 
 

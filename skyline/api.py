@@ -139,27 +139,27 @@ class SkylineRedisApi(object):
             settings[key] = default
             value = self.redis_conn.get(key)
             if value is not None:
-                settings[key] = json.loads(value)
+                settings[key] = json.loads(value.decode('utf-8'))
         return settings
 
     def get_blacklist(self):
-        return json.loads(self.redis_conn.get("skyline:config:blacklist"))
+        return json.loads(self.redis_conn.get("skyline:config:blacklist").decode('utf-8'))
 
     def get_whitelist(self):
-        return json.loads(self.redis_conn.get("skyline:config:whitelist"))
+        return json.loads(self.redis_conn.get("skyline:config:whitelist").decode('utf-8'))
 
     def get_alerts_rules(self):
         """Parse the alerts rules"""
         ret = self.redis_conn.get('skyline:config:alerts:rules')
         if ret:
-            return json.loads(ret)
+            return json.loads(ret.decode('utf-8'))
         return []
 
     def get_alerts_settings(self):
         """Parse the alerts settings"""
         ret = self.redis_conn.get('skyline:config:alerts:settings')
         if ret:
-            return json.loads(ret)
+            return json.loads(ret.decode('utf-8'))
         return {}
 
     def check_alert(self, metric, strategy):
