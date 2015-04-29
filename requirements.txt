@@ -21,3 +21,5 @@ pygerduty==0.28
 # testing
 unittest2==1.0.1
 mock==1.0.1
+
+ConfigArgParse==0.9.3

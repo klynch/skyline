@@ -4,8 +4,8 @@ from twisted.protocols.basic import LineOnlyReceiver, Int32StringReceiver
 from twisted.python import log
 from skyline.utils import SafeUnpickler
 
-from cache import MetricCache
-from regexlist import WhiteList, BlackList
+from .cache import MetricCache
+from .regexlist import WhiteList, BlackList
 
 
 def emit(metric, value):

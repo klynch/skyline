@@ -1,8 +1,8 @@
 import time
-from cache import MetricCache
 from twisted.python import log
 
-from regexlist import BlackList, WhiteList
+from .cache import MetricCache
+from .regexlist import BlackList, WhiteList
 
 
 class Publisher(object):

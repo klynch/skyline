@@ -19,7 +19,7 @@ def seed_line(host, port, metric, timeseries, initial):
     for datapoint in timeseries:
         datapoint[0] = initial
         initial += 1
-        sock.sendall("{0} {1} {2}\n".format(metric, datapoint[1], datapoint[0]))
+        sock.sendall("{0} {1} {2}\n".format(metric, datapoint[1], datapoint[0]).encode('utf-8'))
     sock.close()
     return metric
 
@@ -29,7 +29,7 @@ def seed_udp(host, port, metric, timeseries, initial):
     for datapoint in timeseries:
         datapoint[0] = initial
         initial += 1
-        sock.sendto("{0} {1} {2}\n".format(metric, datapoint[1], datapoint[0]), (host, port))
+        sock.sendto("{0} {1} {2}\n".format(metric, datapoint[1], datapoint[0]).encode('utf-8'), (host, port))
     return metric
 
 
