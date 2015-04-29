@@ -39,7 +39,7 @@ class Analyzer(object):
                     if not self.api.check_alert(metric, strategy) or check:
                         if not check:
                             self.api.set_alert(metric, strategy, timeout)
-                        target = getattr(alerts, 'alert_{0}'.format(strategy))
+                        target = getattr(skyline.analyzer.alerts, 'alert_{0}'.format(strategy))
                         settings = self.alerts_settings.get(strategy, {})
                         if trigger:
                             target(metric, datapoint, ensemble, args, settings)
