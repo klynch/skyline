@@ -64,6 +64,10 @@ if __name__ == "__main__":
     check_anomalies_parser = subparsers.add_parser("check_anomalies", help="List the anomalies currently in the system.")
     check_anomalies_parser.set_defaults(which="check_anomalies")
 
+    flush_data_parser = subparsers.add_parser("flush_data", help="DANGER ZONE: Flushes all data in the system. Configuration settings are not removed.")
+    flush_data_parser.add_argument("--force", action='store_true', required=True, help="Required to force deletion")
+    flush_data_parser.set_defaults(which="flush_data")
+
     args = parser.parse_args()
     api = SkylineRedisApi(args.redis)
 
@@ -81,5 +85,7 @@ if __name__ == "__main__":
         check_alert(api, args, args.metric, args.trigger)
     if args.which == "check_anomalies":
         check_anomalies(api)
+    if args.which == "flush_data" and args.force:
+        api.flush_data()
     if args.which in ["horizon", "analyzer", "roomba"]:
         run_agent(parser, api, args.which, args)

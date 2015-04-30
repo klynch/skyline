@@ -167,3 +167,10 @@ class SkylineRedisApi(object):
 
     def set_alert(self, metric, strategy, timeout):
         self.redis_conn.setex('skyline:alert:{}:{}'.format(strategy, metric), timeout, time.time())
+
+    def flush_data(self):
+        """DANGER ZONE: Remove all metric data from the system"""
+        for i in ['skyline:metric:*', 'skyline:metricset:*']:
+            data = self.redis_conn.keys('skyline:metric:*')
+            if data:
+                self.redis_conn.delete(*data)
