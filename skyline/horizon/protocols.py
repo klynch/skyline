@@ -9,7 +9,8 @@ from .regexlist import WhiteList, BlackList
 
 
 def emit(metric, value):
-    log.msg(metric + " " + value)
+    # TODO this needs to be addressed so that useful metrics can be collected
+    pass
 
 
 class MetricReceiver:
