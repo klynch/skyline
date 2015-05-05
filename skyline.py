@@ -11,6 +11,7 @@ from skyline.seed import seed_data
 if __name__ == "__main__":
     parser = configargparse.ArgumentParser(description="Anomaly detection.")
     parser.add_argument("-r", "--redis", default="redis://localhost:6379/", env_var='REDIS', help="Redis instance to connect to")
+    parser.add_argument("--identifier", default="", env_var='IDENTIFIER', help="Identifier for the process")
     parser.add_argument("-v", "--verbose", action='store_true', default=False, help="Verbose mode")
 
     subparsers = parser.add_subparsers(title='commands', description='Specify the specific command to run', help='process to run')
